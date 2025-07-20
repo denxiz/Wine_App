@@ -9,17 +9,27 @@ import {
   useTheme,
   useMediaQuery,
 } from "@mui/material";
+import { useNavigate } from "react-router-dom";
 
 export default function SignIn() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+  const navigate = useNavigate();
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log("Logging in with:", { email, password });
-    // TODO: Add Supabase login logic
+
+    // Simple hardcoded login check
+    if (email === "meyhouse" && password === "meyhouse123") {
+      navigate("/restaurant");
+    } else if (email === "deniz" && password === "deniz123") {
+      navigate("/admin");
+    } else {
+      setError("Invalid credentials");
+    }
   };
 
   return (
@@ -61,8 +71,7 @@ export default function SignIn() {
           </Typography>
           <form onSubmit={handleSubmit}>
             <TextField
-              label="Email"
-              type="email"
+              label="Username"
               fullWidth
               margin="normal"
               required
@@ -78,6 +87,11 @@ export default function SignIn() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
+            {error && (
+              <Typography color="error" variant="body2" sx={{ mt: 1 }}>
+                {error}
+              </Typography>
+            )}
             <Box sx={{ textAlign: "right", mt: 1 }}>
               <Link href="#" underline="hover" fontSize="0.9rem">
                 Forgot Password
