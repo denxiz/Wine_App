@@ -58,9 +58,10 @@ export default function RestaurantList() {
     <Box sx={{ minHeight: "100vh", backgroundColor: "#f4fdfc", display: "flex", flexDirection: "column" }}>
       <Box sx={{ backgroundColor: "#d8f0ef", p: 2, display: "flex", justifyContent: "space-between" }}>
         <Typography fontWeight="bold">Restaurant List</Typography>
-        <Button href="/admin" variant="contained" sx={{ backgroundColor: "#cddaff", color: "#0026a3" }}>
-          Dashboard
+        <Button href="#/admin" variant="contained" sx={{ backgroundColor: "#cddaff", color: "#0026a3" }}>
+        Dashboard
         </Button>
+
       </Box>
 
       <TableContainer component={Paper}>
