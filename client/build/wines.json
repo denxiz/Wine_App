@@ -1,0 +1,32 @@
+[
+  {
+    "name": "Chateau Margaux",
+    "region": "Bordeaux",
+    "subRegion": "Margaux",
+    "type": "Red",
+    "body": "Full",
+    "vintage": 2015,
+    "price": 450,
+    "label": "https://example.com/margaux.jpg"
+  },
+  {
+    "name": "Cloudy Bay Sauvignon Blanc",
+    "region": "Marlborough",
+    "subRegion": "Wairau Valley",
+    "type": "White",
+    "body": "Light",
+    "vintage": 2021,
+    "price": 30,
+    "label": "https://example.com/cloudybay.jpg"
+  },
+  {
+    "name": "Penfolds Bin 389",
+    "region": "South Australia",
+    "subRegion": "Barossa Valley",
+    "type": "Red",
+    "body": "Medium",
+    "vintage": 2019,
+    "price": 65,
+    "label": "https://example.com/penfolds.jpg"
+  }
+]
