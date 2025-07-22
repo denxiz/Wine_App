@@ -1,6 +1,6 @@
 // client/src/App.js
 import React from "react";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { HashRouter as Router, Routes, Route } from "react-router-dom";
 
 import SignIn from "./components/SignIn";
 import WineLibrary from "./components/WineLibrary";
@@ -16,16 +16,16 @@ function App() {
   return (
     <Router>
       <Routes>
-        <Route path="restaurant/requestwineform" element={<RequestWineForm />}/>
+        <Route path="/restaurant/requestwineform" element={<RequestWineForm />}/>
         <Route path="/user-view" element={<UserView />}/>
         <Route path="/admin/restaurantlist/add" element={<AddRestaurant />} />
         <Route path="/admin/restaurantlist" element={<RestaurantList />} />
         <Route path="/" element={<SignIn />} />
-        <Route path="admin/wines" element={<WineLibrary />} />
+        <Route path="/admin/wines" element={<WineLibrary />} />
         <Route path="/restaurant" element={<RestaurantDashboard />} />
         <Route path="/admin" element={<AdminDashboard />} />
-        <Route path="admin/wine-requests" element={<WineRequestReview />} />
-        <Route path="admin/wines/add" element={<AddWineForm />} />
+        <Route path="/admin/wine-requests" element={<WineRequestReview />} />
+        <Route path="/admin/wines/add" element={<AddWineForm />} />
       </Routes>
     </Router>
   );

@@ -22,6 +22,7 @@ import {
 import SearchIcon from "@mui/icons-material/Search";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
+import { Link as RouterLink } from "react-router-dom"
 
 export default function AdminDashboard() {
   const [users, setUsers] = useState([]);
@@ -89,23 +90,23 @@ export default function AdminDashboard() {
       </Box>
 
       {/* Top Navigation Bar */}
-      <Box
-        sx={{
-          backgroundColor: "#d8f0ef",
-          px: 2,
-          py: 1,
-          borderBottom: "1px solid #ccc",
-          display: "flex",
-          alignItems: "center",
-          gap: 2,
-          flexWrap: "wrap"
-        }}
-      >
-        <Button variant="text" href="/admin/restaurantlist">Restaurants</Button>
-        <Button variant="text" href="/admin/wines/add">Add Wine</Button>
-        <Button variant="text" href="/admin/wine-requests">Wine Requests</Button>
-        <Button variant="text" href="/user-view">User View</Button>
-      </Box>
+<Box
+  sx={{
+    backgroundColor: "#d8f0ef",
+    px: 2,
+    py: 1,
+    borderBottom: "1px solid #ccc",
+    display: "flex",
+    alignItems: "center",
+    gap: 2,
+    flexWrap: "wrap"
+  }}
+>
+  <Button variant="text" component={RouterLink} to="/admin/restaurantlist">Restaurants</Button>
+  <Button variant="text" component={RouterLink} to="/admin/wines/add">Add Wine</Button>
+  <Button variant="text" component={RouterLink} to="/admin/wine-requests">Wine Requests</Button>
+  <Button variant="text" component={RouterLink} to="/user-view">User View</Button>
+</Box>
 
       {/* Dashboard Content */}
       <Box sx={{ backgroundColor: "#f4fdfc", p: 2 }}>
@@ -114,28 +115,28 @@ export default function AdminDashboard() {
         </Typography>
 
         {/* Stat Boxes */}
-        <Box sx={{ display: "flex", justifyContent: "center",flexWrap: "wrap", gap: 10, mb: 3, }}>
-          <Button href="/admin/wines" sx={{ p: 0 }}>
-            <Paper elevation={2} sx={{ p: 2, minWidth: 240, transition: "transform 0.2s ease, box-shadow 0.2s ease", "&:hover": { transform: "scale(1.03)", boxShadow: 6 } }}>
-              <Typography variant="subtitle1" fontWeight="bold" color="primary">Wine Manager</Typography>
-              <Typography variant="h5" fontWeight="bold">{wineManagerCount}</Typography>
-            </Paper>
-          </Button>
+<Box sx={{ display: "flex", justifyContent: "center", flexWrap: "wrap", gap: 10, mb: 3 }}>
+  <Button component={RouterLink} to="/admin/wines" sx={{ p: 0 }}>
+    <Paper elevation={2} sx={{ p: 2, minWidth: 240, transition: "transform 0.2s ease, box-shadow 0.2s ease", "&:hover": { transform: "scale(1.03)", boxShadow: 6 } }}>
+      <Typography variant="subtitle1" fontWeight="bold" color="primary">Wine Manager</Typography>
+      <Typography variant="h5" fontWeight="bold">{wineManagerCount}</Typography>
+    </Paper>
+  </Button>
 
-          <Button href="/admin/restaurantlist" sx={{ p: 0 }}>
-            <Paper elevation={2} sx={{ p: 2, minWidth: 240, transition: "transform 0.2s ease, box-shadow 0.2s ease", "&:hover": { transform: "scale(1.03)", boxShadow: 6 } }}>
-              <Typography variant="subtitle1" fontWeight="bold" color="primary">Restaurant List</Typography>
-              <Typography variant="h5" fontWeight="bold">{restaurantCount}</Typography>
-            </Paper>
-          </Button>
+  <Button component={RouterLink} to="/admin/restaurantlist" sx={{ p: 0 }}>
+    <Paper elevation={2} sx={{ p: 2, minWidth: 240, transition: "transform 0.2s ease, box-shadow 0.2s ease", "&:hover": { transform: "scale(1.03)", boxShadow: 6 } }}>
+      <Typography variant="subtitle1" fontWeight="bold" color="primary">Restaurant List</Typography>
+      <Typography variant="h5" fontWeight="bold">{restaurantCount}</Typography>
+    </Paper>
+  </Button>
 
-          <Button href="/admin/wine-requests" sx={{ p: 0 }}>
-            <Paper elevation={2} sx={{ p: 2, minWidth: 240, transition: "transform 0.2s ease, box-shadow 0.2s ease", "&:hover": { transform: "scale(1.03)", boxShadow: 6 } }}>
-              <Typography variant="subtitle1" fontWeight="bold" color="primary">Wine Requests</Typography>
-              <Typography variant="h5" fontWeight="bold">{wineRequestCount}</Typography>
-            </Paper>
-          </Button>
-        </Box>
+  <Button component={RouterLink} to="/admin/wine-requests" sx={{ p: 0 }}>
+    <Paper elevation={2} sx={{ p: 2, minWidth: 240, transition: "transform 0.2s ease, box-shadow 0.2s ease", "&:hover": { transform: "scale(1.03)", boxShadow: 6 } }}>
+      <Typography variant="subtitle1" fontWeight="bold" color="primary">Wine Requests</Typography>
+      <Typography variant="h5" fontWeight="bold">{wineRequestCount}</Typography>
+    </Paper>
+  </Button>
+</Box>
 
         {/* Users Table */}
         <Typography variant="h6" sx={{ mb: 1 }}>Users</Typography>

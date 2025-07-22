@@ -8,8 +8,9 @@
     "@emotion/styled": "^11.10.4",
     "@mui/icons-material": "^5.11.0",
     "@mui/material": "^5.11.0",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
+    "framer-motion": "^10.12.16",
+    "react": "^19.0.0-beta-26f2496093-20240514",
+    "react-dom": "^19.0.0-beta-26f2496093-20240514",
     "react-router-dom": "^7.6.3",
     "react-scripts": "^5.0.1"
   },
@@ -37,4 +38,3 @@
     "gh-pages": "^6.3.0"
   }
 }
-
