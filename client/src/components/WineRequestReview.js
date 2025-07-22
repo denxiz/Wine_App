@@ -66,7 +66,7 @@ export default function WineRequestReview() {
     <Box sx={{ minHeight: "100vh", backgroundColor: "#f4fdfc" }}>
       <Box sx={{ backgroundColor: "#d8f0ef", p: 2, display: "flex", justifyContent: "space-between" }}>
         <Typography fontWeight="bold">Wine Request Review</Typography>
-        <Button href="/admin" variant="contained" sx={{ backgroundColor: "#cddaff", color: "#0026a3" }}>
+        <Button href="#/admin" variant="contained" sx={{ backgroundColor: "#cddaff", color: "#0026a3" }}>
           Dashboard
         </Button>
       </Box>

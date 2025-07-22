@@ -103,11 +103,21 @@ export default function RestaurantList() {
         </Table>
       </TableContainer>
 
-      <Box sx={{ mt: 2, px: 2 }}>
-        <Button variant="contained" href="/admin/restaurantlist/add">
-          Add New Restaurant
-        </Button>
-      </Box>
+<Box sx={{ mt: 2, px: 2 }}>
+  <Button
+    variant="contained"
+    onClick={() => {
+      const base = window.location.origin;
+      const path = window.location.pathname.includes("github.io")
+        ? "/Wine_App/#/admin/restaurantlist/add"
+        : "#/admin/restaurantlist/add";
+      window.location.href = base + path;
+    }}
+  >
+    Add New Restaurant
+  </Button>
+</Box>
+
 
       {/* Edit Dialog */}
       <Dialog open={openEdit} onClose={() => setOpenEdit(false)}>
