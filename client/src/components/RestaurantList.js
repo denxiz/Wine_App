@@ -57,7 +57,13 @@ export default function RestaurantList() {
       )
     );
   };
-
+  const handleRowClick = (id) => {
+  const base = window.location.origin;
+  const path = window.location.pathname.includes("github.io")
+    ? `/Wine_App/#/admin/restaurantlibrary/${id}`
+    : `/Wine_App/#/admin/restaurantlibrary/${id}`;
+  window.location.href = base + path;
+};
   return (
     <Box sx={{ minHeight: "100vh", backgroundColor: "#f4fdfc", display: "flex", flexDirection: "column" }}>
       <Box sx={{ backgroundColor: "#d8f0ef", p: 2, display: "flex", justifyContent: "space-between" }}>
@@ -84,7 +90,20 @@ export default function RestaurantList() {
           </TableHead>
           <TableBody>
             {restaurants.map((r) => (
-              <TableRow key={r.id}>
+              <TableRow
+  key={r.id}
+  hover
+  sx={{
+    cursor: "pointer",
+    transition: "transform 0.15s ease-in-out, box-shadow 0.15s ease-in-out",
+    "&:hover": {
+      transform: "scale(1.015)",
+      boxShadow: 1,
+      backgroundColor: "#f0ffff",
+    }
+  }}
+  onClick={() => handleRowClick(r.id)}
+>
                 <TableCell>{r.name}</TableCell>
                 <TableCell>{r.email}</TableCell>
                 <TableCell>{r.contact_name}</TableCell>
@@ -102,8 +121,13 @@ export default function RestaurantList() {
                   </Typography>
                 </TableCell>
                 <TableCell>
-                  <IconButton onClick={() => handleEdit(r)}><EditIcon /></IconButton>
-                  <IconButton onClick={() => handleDelete(r)}><DeleteIcon /></IconButton>
+                  <IconButton onClick={(e) => { e.stopPropagation(); handleEdit(r); }}>
+  <EditIcon />
+</IconButton>
+<IconButton onClick={(e) => { e.stopPropagation(); handleDelete(r); }}>
+  <DeleteIcon />
+</IconButton>
+
                 </TableCell>
               </TableRow>
             ))}
