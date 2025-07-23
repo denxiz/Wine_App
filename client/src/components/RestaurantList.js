@@ -21,6 +21,8 @@ export default function RestaurantList() {
         id: 1,
         name: "Meyhouse Palo Alto",
         email: "paloalto@meyhouse.com",
+        contact_name: "Omer",
+        contact_email: "Omer@meyhouse.com",
         address: "343 University Ave, Palo Alto, CA",
         wine_count: 12,
         is_active: true
@@ -28,6 +30,8 @@ export default function RestaurantList() {
       {
         id: 2,
         name: "Meyhouse SF",
+        contact_name: "Omer",
+        contact_email: "Omer@meyhouse.com",
         email: "sf@meyhouse.com",
         address: "123 Mission St, San Francisco, CA",
         wine_count: 8,
@@ -67,10 +71,12 @@ export default function RestaurantList() {
       <TableContainer component={Paper}>
         <Table>
           <TableHead>
-            <TableRow sx={{ backgroundColor: "#d8f0ef" }}>
+            <TableRow sx={{ backgroundColor: "#ffffff" }}>
               <TableCell>Name</TableCell>
               <TableCell>Email</TableCell>
-              <TableCell>Location</TableCell>
+              <TableCell>Contact_Name</TableCell>
+              <TableCell>Contact_Email</TableCell>
+              <TableCell>Address</TableCell>
               <TableCell># of Wines</TableCell>
               <TableCell>Membership</TableCell>
               <TableCell>Actions</TableCell>
@@ -81,6 +87,8 @@ export default function RestaurantList() {
               <TableRow key={r.id}>
                 <TableCell>{r.name}</TableCell>
                 <TableCell>{r.email}</TableCell>
+                <TableCell>{r.contact_name}</TableCell>
+                <TableCell>{r.contact_email}</TableCell>
                 <TableCell>{r.address || "-"}</TableCell>
                 <TableCell>{r.wine_count}</TableCell>
                 <TableCell>
@@ -110,7 +118,7 @@ export default function RestaurantList() {
       const base = window.location.origin;
       const path = window.location.pathname.includes("github.io")
         ? "/Wine_App/#/admin/restaurantlist/add"
-        : "#/admin/restaurantlist/add";
+        : "/Wine_App/#/admin/restaurantlist/add";
       window.location.href = base + path;
     }}
   >
@@ -134,6 +142,16 @@ export default function RestaurantList() {
             onChange={(e) => setSelectedRestaurant((prev) => ({ ...prev, email: e.target.value }))}
           />
           <TextField
+            label="Contact_Name"
+            value={selectedRestaurant?.contact_name || ""}
+            onChange={(e) => setSelectedRestaurant((prev) => ({ ...prev, contact_name: e.target.value }))}
+          />
+                    <TextField
+            label="Contact_Email"
+            value={selectedRestaurant?.contact_email || ""}
+            onChange={(e) => setSelectedRestaurant((prev) => ({ ...prev, contact_email: e.target.value }))}
+          />
+                    <TextField
             label="Address"
             value={selectedRestaurant?.address || ""}
             onChange={(e) => setSelectedRestaurant((prev) => ({ ...prev, address: e.target.value }))}

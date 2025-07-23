@@ -37,7 +37,7 @@ export default function UserWineLibrary() {
       type: "White",
       body: "Light",
       notes: "Crisp and citrusy with hints of passionfruit and gooseberry.",
-      image_url: "https://images.unsplash.com/photo-1584467735871-7f69c18bd56b",
+      image_url: "/cloudy bay sauvignon.png",
       price: 75
     },
     {
@@ -50,7 +50,7 @@ export default function UserWineLibrary() {
       type: "Red",
       body: "Medium",
       notes: "Elegant and well-balanced with flavors of cherry, tobacco, and spice.",
-      image_url: "https://images.unsplash.com/photo-1578685781339-4f14b722b1b7",
+      image_url: "/antinori.jpeg",
       price: 200
     },
     
@@ -121,7 +121,7 @@ export default function UserWineLibrary() {
     >
     <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", mb: 2 }}>
   <img
-    src="/logonewomerM2 copy_edited.jpg"
+    src={`${process.env.PUBLIC_URL}/logonewomerM2 copy_edited.jpg`}
     alt="Wine App Logo"
     style={{ height: 60,width: "auto", marginRight: 12 }}
   />
@@ -286,18 +286,36 @@ export default function UserWineLibrary() {
   </CardContent>
 
   {/* Image section on the right */}
-  {wine.image_url && (
-    <CardMedia
-      component="img"
-      image={wine.image_url}
-      alt={wine.wine_name}
-      sx={{
-        width: 160,
-        objectFit: "contain",
-        backgroundColor: "#fffefc",
-        p: 2
-      }}
-    />
+   {wine.image_url && (
+     <Box
+    sx={{
+      display: "flex",
+      justifyContent: "center",
+      alignItems: "center",
+      width: { xs: 110, sm: 130, md: 150 },
+      height: "100%",
+      py: 2.2, // adds white space top & bottom
+      backgroundColor: "#ffffff",
+    }}
+  >
+            <CardMedia
+              component="img"
+              image={
+                wine.image_url.startsWith("http")
+                  ? wine.image_url
+                  : `${process.env.PUBLIC_URL}${wine.image_url}`
+              }
+              alt={wine.wine_name}
+              sx={{
+                width: { xs: 110, sm: 130, md: 150 },
+                height: "auto",
+                maxHeight: 170,
+                objectFit: "contain",
+                backgroundColor: "#ffffff",
+                alignSelf: "center"
+              }}
+            />
+            </Box>
   )}
   
 </Card>
@@ -312,12 +330,12 @@ export default function UserWineLibrary() {
   open={!!selectedWine}
   onClose={() => setSelectedWine(null)}
   TransitionComponent={Zoom}
-  maxWidth="md"
   fullWidth
+  maxWidth="sm"
   PaperProps={{
     sx: {
       display: "flex",
-      flexDirection: "row",
+      flexDirection: { xs: "column", sm: "row" },
       borderRadius: 3,
       backgroundColor: "#fef9f2",
       overflow: "hidden",
@@ -327,6 +345,7 @@ export default function UserWineLibrary() {
     }
   }}
 >
+
   <IconButton
     onClick={() => setSelectedWine(null)}
     sx={{ position: "absolute", right: 8, top: 8, zIndex: 10 }}
@@ -337,26 +356,37 @@ export default function UserWineLibrary() {
   {/* Image side */}
   {selectedWine?.image_url && (
     <Box
-      sx={{
-        flex: 1,
-        backgroundColor: "#fff",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        p: 2
-      }}
-    >
-      <img
-        src={selectedWine.image_url}
-        alt={selectedWine.wine_name}
-        style={{
-          maxWidth: "100%",
-          maxHeight: 400,
-          objectFit: "contain",
-          borderRadius: 8
-        }}
-      />
-    </Box>
+  sx={{
+    flex: { xs: "none", sm: 1 },
+    width: { xs: "100%", sm: "auto" },
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    p: 2,
+    backgroundColor: "#fff"
+  }}
+>
+  <img
+    src={
+      selectedWine.image_url?.startsWith("http")
+        ? selectedWine.image_url
+        : `${process.env.PUBLIC_URL}${selectedWine.image_url}`
+    }
+    alt={selectedWine.wine_name}
+    onError={(e) => {
+      e.target.onerror = null;
+      e.target.src = `${process.env.PUBLIC_URL}/default-wine.png`;
+    }}
+    style={{
+      maxWidth: "100%",
+      maxHeight: "250px",      // ✅ Bump up for mobile
+      width: "auto",
+      objectFit: "contain",
+      borderRadius: 8
+    }}
+  />
+</Box>
+
   )}
 
   {/* Text side */}

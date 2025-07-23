@@ -83,9 +83,12 @@ const handleEdit = (wineId) => {
 
   return (
     <Box sx={{ padding: 3, backgroundColor: "#f4fdfc" }}>
-      <Typography variant="h5" fontWeight="bold" gutterBottom>
-        Wine Database
-      </Typography>
+      <Box sx={{ backgroundColor: "#f4fdfc", p: 1, display: "flex", justifyContent: "space-between" }}>
+              <Typography variant = "h5" fontWeight="bold">Wine Database</Typography>
+              <Button href="#/admin" variant="contained" sx={{ backgroundColor: "#cddaff", color: "#0026a3" }}>
+                Dashboard
+              </Button>
+            </Box>
 
       {/* Search Fields */}
 <Grid container spacing={2} sx={{ mb: 2 }}>
@@ -166,11 +169,20 @@ const handleEdit = (wineId) => {
       </TableContainer>
 
       {/* Add New Wine Button */}
-      <Box sx={{ mt: 2 }}>
-        <Button variant="contained" color="primary" onClick={() => window.location.href = '/admin/wines/add'}>
-          Add New Wine
-        </Button>
-      </Box>
+<Box sx={{ mt: 2, px: 2 }}>
+  <Button
+    variant="contained"
+    onClick={() => {
+      const base = window.location.origin;
+      const path = window.location.pathname.includes("github.io")
+        ? "/Wine_App/#/admin/wines/add"
+        : "/Wine_App/#/admin/wines/add";
+      window.location.href = base + path;
+    }}
+  >
+    Add New Wine
+  </Button>
+</Box>
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={openConfirm} onClose={() => setOpenConfirm(false)}>

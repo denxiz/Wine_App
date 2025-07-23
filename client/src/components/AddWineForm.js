@@ -16,6 +16,15 @@ export default function AddWinePage() {
     notes: "",
   });
 
+    const [imageFile, setImageFile] = useState(null);
+
+
+    const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setImageFile(file);
+    }
+  };
   const handleChange = (e) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
@@ -39,12 +48,12 @@ export default function AddWinePage() {
   return (
     <Box sx={{ minHeight: "100vh", display: "flex", flexDirection: "column", backgroundColor: "#f4fdfc" }}>
       <Box sx={{ backgroundColor: "#d8f0ef", p: 2, display: "flex", justifyContent: "space-between" }}>
-        <Typography fontWeight="bold">Wine List</Typography>
-        <Button href="/admin" variant="contained" sx={{ backgroundColor: "#cddaff", color: "#0026a3" }}>Dashboard</Button>
+        <Typography variant= "h6" fontWeight="bold">Wine List</Typography>
+        <Button href="#/admin" variant="contained" sx={{ backgroundColor: "#cddaff", color: "#0026a3" }}>Dashboard</Button>
       </Box>
 
       <Box sx={{ p: 4 }}>
-        <Typography variant="h6" sx={{ mb: 3 }}>Add Wine</Typography>
+        <Typography variant="h5" fontWeight="bold" sx={{ mb: 3 }}>Add Wine</Typography>
         <Paper sx={{ p: 3, backgroundColor: "#ffffff" }}>
           <form onSubmit={handleSubmit}>
             <TextField fullWidth label="Wine Name" name="wine_name" value={form.wine_name} onChange={handleChange} sx={{ mb: 2 }} />
@@ -83,8 +92,20 @@ export default function AddWinePage() {
               onChange={handleChange}
               sx={{ mb: 2 }}
             />
-
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 2 }}>
+              <Button variant="outlined" component="label">
+                Upload Image
+                <input hidden type="file" accept="image/*" onChange={handleImageChange} />
+              </Button>
+            
+              {imageFile && (
+                <Typography variant="body2">
+                  Selected: {imageFile.name}
+                </Typography>
+              )}
+              
             <Button type="submit" variant="contained" color="primary">Submit</Button>
+            </Box>
           </form>
         </Paper>
       </Box>

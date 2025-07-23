@@ -48,7 +48,7 @@ export default function RestaurantDashboard() {
         region: "Marlborough",
         country: "New Zealand",
         vintage: 2021,
-        image_url: "https://images.unsplash.com/photo-1584467735871-7f69c18bd56b",
+        image_url: "/cloudy bay sauvignon.png",
       },
       price_override: 75,
     },
@@ -109,21 +109,38 @@ const normalizeText = (str) =>
           alignItems: "center",
         }}
       >
-        <Box>
+        <Box sx={{ display: "flex", alignItems: "center" }}>
           <Typography variant="h6" fontWeight="bold">
-            Wine List <span style={{ fontWeight: "normal" }}>"Restaurant View"</span>
+            Wine List 
           </Typography>
-          <Typography variant="subtitle2">Restaurant Name</Typography>
+           <img
+    src={`${process.env.PUBLIC_URL}/logonewomerM2 copy_edited.jpg`}
+    alt="Wine App Logo"
+    style={{marginLeft: 30, height: 60,width: "auto", marginRight: 12 }}
+  />
         </Box>
         <Box sx={{ display: "flex", gap: 2 }}>
-          <Button href="/restaurant/requestwineform" variant="contained" sx={{ backgroundColor: "#ffccbc", color: "#100412ff" }}>
-            Request Wine
-          </Button>
-          <Button href="/user-view" variant="contained" sx={{ backgroundColor: "#ffccbc", color: "#100412ff" }}>
+  <Button sx={{ backgroundColor: "#ffccbc", color: "#100412ff" }}
+    variant="contained"
+    onClick={() => {
+      const base = window.location.origin;
+      const path = window.location.pathname.includes("github.io")
+        ? "/Wine_App/#/restaurant/requestwineform"
+        : "/Wine_App/#/restaurant/requestwineform";
+      window.location.href = base + path;
+    }}
+  >
+    Request Wine
+  </Button>
+          <Button href="#/user-view" variant="contained" sx={{ backgroundColor: "#ffccbc", color: "#100412ff" }}>
             User View
+          </Button>
+          <Button href="#/" variant="contained" sx={{ backgroundColor: "#ffccbc", color: "#100412ff" }}>
+            Logout
           </Button>
         </Box>
       </Box>
+
 
       {/* Search Inputs */}
       <Box sx={{ p: 2}}>
@@ -181,9 +198,21 @@ const normalizeText = (str) =>
               </Typography>
               {entry.wine?.image_url && (
                 <img
-                  src={entry.wine.image_url}
+                  src={
+      entry.wine.image_url?.startsWith("http")
+        ? entry.wine.image_url
+        : `${process.env.PUBLIC_URL}${entry.wine.image_url}`
+    }
                   alt={entry.wine.wine_name}
-                  style={{ width: "100px", marginTop: "8px", borderRadius: "6px" }}
+                    style={{
+    maxWidth: "100px",
+    maxHeight: "120px",
+    width: "auto",
+    height: "auto",
+    objectFit: "contain",
+    marginTop: "8px",
+    borderRadius: "6px"
+  }}
                 />
               )}
             </Box>

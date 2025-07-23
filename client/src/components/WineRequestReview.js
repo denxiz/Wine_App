@@ -2,13 +2,19 @@ import React, { useEffect, useState } from "react";
 import {
   Box, Typography, Paper, Table, TableBody,
   TableCell, TableContainer, TableHead, TableRow,
-  Button, IconButton
+  Button, IconButton, Dialog, DialogTitle, DialogContent,TextField,DialogActions
 } from "@mui/material";
 import CheckIcon from "@mui/icons-material/Check";
 import ClearIcon from "@mui/icons-material/Clear";
+import EditIcon from "@mui/icons-material/Edit";
+
 
 export default function WineRequestReview() {
+  const [selectedRequest, setSelectedRequest] = useState(null);
+  const [openEdit, setOpenEdit] = useState(false);
   const [requests, setRequests] = useState([
+
+
     {
       id: 1,
       wine_name: "Château Margaux",
@@ -58,6 +64,11 @@ export default function WineRequestReview() {
     console.log("Approve request", id);
   };
 
+const handleEdit = (request) => {
+  setSelectedRequest(request);
+  setOpenEdit(true);
+};
+
   const handleReject = (id) => {
     console.log("Reject request", id);
   };
@@ -100,6 +111,10 @@ export default function WineRequestReview() {
                 <TableCell>{req.notes || "-"}</TableCell>
                 <TableCell>{req.restaurant_name}</TableCell>
                 <TableCell>
+                <IconButton onClick={() => handleEdit(req)}><EditIcon /></IconButton>
+
+                </TableCell>
+                <TableCell>
                   <IconButton color="success" onClick={() => handleApprove(req.id)}>
                     <CheckIcon />
                   </IconButton>
@@ -112,6 +127,91 @@ export default function WineRequestReview() {
           </TableBody>
         </Table>
       </TableContainer>
-    </Box>
+    
+
+  <Dialog open={openEdit} onClose={() => setOpenEdit(false)}>
+  <DialogTitle>Edit Wine Request</DialogTitle>
+  <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 1 }}>
+    <TextField
+      label="Wine Name"
+      value={selectedRequest?.wine_name || ""}
+      onChange={(e) =>
+        setSelectedRequest((prev) => ({ ...prev, wine_name: e.target.value }))
+      }
+    />
+    <TextField
+      label="Company"
+      value={selectedRequest?.company || ""}
+      onChange={(e) =>
+        setSelectedRequest((prev) => ({ ...prev, company: e.target.value }))
+      }
+    />
+    <TextField
+      label="Country"
+      value={selectedRequest?.country || ""}
+      onChange={(e) =>
+        setSelectedRequest((prev) => ({ ...prev, country: e.target.value }))
+      }
+    />
+    <TextField
+      label="Region"
+      value={selectedRequest?.region || ""}
+      onChange={(e) =>
+        setSelectedRequest((prev) => ({ ...prev, region: e.target.value }))
+      }
+    />
+    <TextField
+      label="Vintage"
+      value={selectedRequest?.vintage || ""}
+      onChange={(e) =>
+        setSelectedRequest((prev) => ({ ...prev, vintage: e.target.value }))
+      }
+    />
+    <TextField
+      label="Type"
+      value={selectedRequest?.type || ""}
+      onChange={(e) =>
+        setSelectedRequest((prev) => ({ ...prev, type: e.target.value }))
+      }
+    />
+    <TextField
+      label="Body"
+      value={selectedRequest?.body || ""}
+      onChange={(e) =>
+        setSelectedRequest((prev) => ({ ...prev, body: e.target.value }))
+      }
+    />
+    <TextField
+      label="Notes"
+      multiline
+      rows={3}
+      value={selectedRequest?.notes || ""}
+      onChange={(e) =>
+        setSelectedRequest((prev) => ({ ...prev, notes: e.target.value }))
+      }
+    />
+    <TextField
+      label="Requested By"
+      value={selectedRequest?.restaurant_name || ""}
+      onChange={(e) =>
+        setSelectedRequest((prev) => ({ ...prev, restaurant_name: e.target.value }))
+      }
+    />
+  </DialogContent>
+  <DialogActions>
+    <Button onClick={() => setOpenEdit(false)}>Cancel</Button>
+    <Button
+      onClick={() => {
+        console.log("Saved wine request edits:", selectedRequest);
+        setOpenEdit(false);
+      }}
+      variant="contained"
+    >
+      Save
+    </Button>
+  </DialogActions>
+  </Dialog>
+</Box>
   );
 }
+

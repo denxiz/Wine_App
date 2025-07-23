@@ -75,7 +75,7 @@ export default function RequestWinePage() {
     <Box sx={{ minHeight: "100vh", display: "flex", flexDirection: "column", backgroundColor: "#fff7f2" }}>
       <Box sx={{ backgroundColor: "#fce8dd", p: 2, display: "flex", justifyContent: "space-between" }}>
         <Typography fontWeight="bold">Wine List</Typography>
-        <Button href="/restaurant" variant="contained" sx={{ backgroundColor: "#ffccbc", color: "#100412ff" }}>Back to Dashboard</Button>
+        <Button href="#/restaurant" variant="contained" sx={{ backgroundColor: "#ffccbc", color: "#100412ff" }}>Back to Dashboard</Button>
       </Box>
 
       <Box sx={{ p: 4 }}>
