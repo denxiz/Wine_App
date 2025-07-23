@@ -11,6 +11,7 @@ export default function AddRestaurant() {
     contact_email: "",
     address: "",
     password: "",
+    logo: null,
   });
 
   const handleChange = (e) => {
@@ -50,7 +51,33 @@ export default function AddRestaurant() {
             <TextField fullWidth label="Contact_Email" name="contact_email" value={form.contact_email} onChange={handleChange} sx={{ mb: 2 }} />
             <TextField fullWidth label="Address" name="address" value={form.address} onChange={handleChange} sx={{ mb: 2 }} />
             <TextField fullWidth label="Password" type="password" name="password" value={form.password} onChange={handleChange} sx={{ mb: 2 }} />
-            <Button type="submit" variant="contained" color="primary">Submit</Button>
+<Box sx={{ display: "flex", gap: 2, alignItems: "center", justifyContent: "flex-start", mt: 2 }}>
+  <Button variant="outlined" component="label">
+    Logo Upload
+    <input
+      type="file"
+      accept="image/*"
+      hidden
+      onChange={(e) => {
+        const file = e.target.files[0];
+        if (file) {
+          setForm((prev) => ({ ...prev, logo: file }));
+        }
+      }}
+    />
+  </Button>
+
+  <Button type="submit" variant="contained" color="primary">
+    Submit
+  </Button>
+</Box>
+
+{form.logo && (
+  <Typography variant="body2" sx={{ mt: 1 }}>
+    Selected: {form.logo.name}
+  </Typography>
+)}
+
           </form>
         </Paper>
       </Box>
