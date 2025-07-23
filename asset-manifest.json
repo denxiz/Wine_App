@@ -1,13 +1,13 @@
 {
   "files": {
     "main.css": "/Wine_App/static/css/main.d4c966ff.css",
-    "main.js": "/Wine_App/static/js/main.9d88f04a.js",
+    "main.js": "/Wine_App/static/js/main.4ca81646.js",
     "index.html": "/Wine_App/index.html",
     "main.d4c966ff.css.map": "/Wine_App/static/css/main.d4c966ff.css.map",
-    "main.9d88f04a.js.map": "/Wine_App/static/js/main.9d88f04a.js.map"
+    "main.4ca81646.js.map": "/Wine_App/static/js/main.4ca81646.js.map"
   },
   "entrypoints": [
     "static/css/main.d4c966ff.css",
-    "static/js/main.9d88f04a.js"
+    "static/js/main.4ca81646.js"
   ]
 }
