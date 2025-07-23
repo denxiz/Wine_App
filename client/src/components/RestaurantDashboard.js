@@ -11,6 +11,7 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  Switch,
 } from "@mui/material";
 
 const restaurantId = "61811ff2-59f7-4b77-986b-fab0c7948a46";
@@ -39,6 +40,7 @@ export default function RestaurantDashboard() {
         image_url: "/Margaux-700x700_12.webp",
       },
       price_override: 450,
+      is_active: true,
     },
     {
       wine: {
@@ -51,6 +53,7 @@ export default function RestaurantDashboard() {
         image_url: "/cloudy bay sauvignon.png",
       },
       price_override: 75,
+      is_active: false,
     },
   ];
   setAllWines(initialWines);
@@ -64,6 +67,15 @@ useEffect(() => {
   );
   setWines(filtered);
 }, [region, wineName, allWines]);
+
+const toggleStock = (id) => {
+  setWines((prev) =>
+    prev.map((entry) =>
+      entry.wine.id === id ? { ...entry, is_active: !entry.is_active } : entry
+    )
+  );
+};
+
 
 
 
@@ -224,25 +236,50 @@ const normalizeText = (str) =>
               )}
             </Box>
             <Box sx={{ display: "flex", gap: 1 }}>
-              <Button
-                variant="contained"
-                onClick={() => handleEditClick(entry)}
-                sx={{ backgroundColor: "#0033cc", "&:hover": { backgroundColor: "#0026a3" } }}
-              >
-                Edit Price
-              </Button>
-              <Button
-                variant="outlined"
-                color="error"
-                onClick={() => handleDeleteClick(entry)}
-              >
-                Delete
-              </Button>
-            </Box>
+
+<Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+  <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+    <Typography variant="caption" sx={{ mb: 0.5 }}>
+      {entry.is_active ? "In Stock" : "Out of Stock"}
+    </Typography>
+    <Switch
+      checked={entry.is_active}
+      onChange={() => toggleStock(entry.wine.id)}
+      color="primary"
+    />
+  </Box>
+
+  <Box sx={{ display: "flex", gap: 1 }}>
+    <Button
+      variant="contained"
+      size="small"
+      sx={{
+        backgroundColor: "#0033cc",
+        "&:hover": { backgroundColor: "#0026a3" },
+        minWidth: "100px",
+        padding: "6px 12px"
+      }}
+      onClick={() => handleEditClick(entry)}
+    >
+      Edit Price
+    </Button>
+    <Button
+      variant="outlined"
+      color="error"
+      size="small"
+      sx={{ minWidth: "100px", padding: "6px 12px" }}
+      onClick={() => handleDeleteClick(entry)}
+    >
+      Delete
+    </Button>
+  </Box>
+  
+</Box>
+</Box>
           </Paper>
         ))}
       </Box>
-
+  
       {/* Edit Price Modal */}
       <Dialog open={openEdit} onClose={() => setOpenEdit(false)}>
         <DialogTitle>Edit Wine Price</DialogTitle>
