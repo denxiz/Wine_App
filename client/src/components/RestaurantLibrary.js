@@ -11,6 +11,10 @@ export default function RestaurantLibrary() {
   const [wines, setWines] = useState([]);
   const [restaurantName, setRestaurantName] = useState("");
   const [loading, setLoading] = useState(true);
+  const [openAssign, setOpenAssign] = useState(false);
+  const [availableWines, setAvailableWines] = useState([]);
+  const [selectedWineId, setSelectedWineId] = useState("");
+
 
   useEffect(() => {
     fetch(`/api/restaurant/${id}/wines`)
@@ -34,23 +38,40 @@ export default function RestaurantLibrary() {
 
   return (
     <Box sx={{ minHeight: "100vh", backgroundColor: "#f4fdfc", p: 3 }}>
-      <Box
-        sx={{
-          backgroundColor: "#d8f0ef",
-          p: 2,
-          mb: 3,
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center"
-        }}
-      >
-        <Typography variant="h5" fontWeight="bold">
-          {restaurantName}'s Wine Library
-        </Typography>
-        <Button onClick={() => navigate(-1)} variant="outlined">
-          Back
-        </Button>
-      </Box>
+<Box
+  sx={{
+    backgroundColor: "#d8f0ef",
+    p: 2,
+    mb: 3,
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center"
+  }}
+>
+  <Typography variant="h5" fontWeight="bold">
+    {restaurantName}'s Wine Library
+  </Typography>
+
+  <Box sx={{ display: "flex", gap: 2 }}>
+    <Button
+      variant="contained"
+      onClick={() => {
+        setOpenAssign(true);
+        fetch("/api/wines")
+          .then(res => res.json())
+          .then(data => setAvailableWines(data))
+          .catch(err => console.error("Failed to load available wines", err));
+      }}
+    >
+      Add Wine to Library
+    </Button>
+
+    <Button onClick={() => navigate(-1)} variant="outlined">
+      Back
+    </Button>
+  </Box>
+</Box>
+
 
       {loading ? (
         <Box sx={{ textAlign: "center", mt: 5 }}>

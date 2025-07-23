@@ -119,7 +119,14 @@ const normalizeText = (str) =>
     style={{marginLeft: 30, height: 60,width: "auto", marginRight: 12 }}
   />
         </Box>
-        <Box sx={{ display: "flex", gap: 2 }}>
+        <Box sx={{
+    display: "flex",
+    flexWrap: "wrap",
+    gap: 1,
+    justifyContent: { xs: "center", sm: "flex-end" },
+    mt: { xs: 1, sm: 0 },
+  }}
+>
   <Button sx={{ backgroundColor: "#ffccbc", color: "#100412ff" }}
     variant="contained"
     onClick={() => {

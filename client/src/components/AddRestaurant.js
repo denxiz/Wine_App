@@ -7,6 +7,8 @@ export default function AddRestaurant() {
   const [form, setForm] = useState({
     name: "",
     email: "",
+    contact_name: "",
+    contact_email: "",
     address: "",
     password: "",
   });
@@ -44,6 +46,8 @@ export default function AddRestaurant() {
           <form onSubmit={handleSubmit}>
             <TextField fullWidth label="Name" name="name" value={form.name} onChange={handleChange} sx={{ mb: 2 }} />
             <TextField fullWidth label="Email" name="email" value={form.email} onChange={handleChange} sx={{ mb: 2 }} />
+            <TextField fullWidth label="Contact_Name" name="contact_name" value={form.contact_name} onChange={handleChange} sx={{ mb: 2 }} />
+            <TextField fullWidth label="Contact_Email" name="contact_email" value={form.contact_email} onChange={handleChange} sx={{ mb: 2 }} />
             <TextField fullWidth label="Address" name="address" value={form.address} onChange={handleChange} sx={{ mb: 2 }} />
             <TextField fullWidth label="Password" type="password" name="password" value={form.password} onChange={handleChange} sx={{ mb: 2 }} />
             <Button type="submit" variant="contained" color="primary">Submit</Button>

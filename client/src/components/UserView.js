@@ -277,7 +277,7 @@ export default function UserWineLibrary() {
       {wine.region}, {wine.country}
     </Typography>
     <Typography variant="body2">
-      {wine.vintage} • {wine.type} • {wine.body}
+      {wine.vintage} • {wine.type} • {wine.body} • ${wine.price}
     </Typography>
     <Typography variant="caption" sx={{ mt: 2, fontStyle: "italic", color: "blue" }}>
   Click for more info →
