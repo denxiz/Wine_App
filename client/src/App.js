@@ -12,10 +12,13 @@ import RestaurantList from "./components/RestaurantList";
 import AddRestaurant from "./components/AddRestaurant";
 import UserView from "./components/UserView";
 import RequestWineForm from "./components/RequestWineForm";
+import RestaurantLibrary from "./components/RestaurantLibrary";
 function App() {
   return (
     <Router>
       <Routes>
+        <Route path="/admin/restaurantlibrary/:id" element={<RestaurantLibrary />} />
+        <Route path="/admin/restaurantlibrary" element = {<RestaurantLibrary />}/>
         <Route path="/restaurant/requestwineform" element={<RequestWineForm />}/>
         <Route path="/user-view" element={<UserView />}/>
         <Route path="/admin/restaurantlist/add" element={<AddRestaurant />} />

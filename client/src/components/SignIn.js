@@ -1,4 +1,4 @@
-import React, { useState} from "react";
+import React, { useState } from "react";
 import {
   Box,
   Button,
@@ -19,16 +19,32 @@ export default function SignIn() {
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setError("");
 
-    // Simple hardcoded login check
-    if (email === "meyhouse" && password === "meyhouse123") {
-      navigate("/restaurant");
-    } else if (email === "deniz" && password === "deniz123") {
-      navigate("/admin");
-    } else {
-      setError("Invalid credentials");
+    try {
+      const res = await fetch("http://localhost:5000/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        localStorage.setItem("token", data.token);
+        if (data.restaurant?.email === "meyhouse@meyhouse.com") {
+          navigate("/restaurant");
+        } else {
+          navigate("/admin");
+        }
+      } else {
+        setError(data.error || "Login failed");
+      }
+    } catch (err) {
+      console.error("Login error:", err);
+      setError("Server error. Please try again.");
     }
   };
 
@@ -48,7 +64,7 @@ export default function SignIn() {
         </Typography>
       </Box>
 
-      {/* Center Form */}
+      {/* Form */}
       <Box
         sx={{
           flexGrow: 1,
@@ -71,7 +87,7 @@ export default function SignIn() {
           </Typography>
           <form onSubmit={handleSubmit}>
             <TextField
-              label="Username"
+              label="Email"
               fullWidth
               margin="normal"
               required

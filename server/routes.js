@@ -1,7 +1,13 @@
 const express = require("express");
 const router = express.Router();
 const db = require("./db"); // Supabase client
+const authenticateToken = require("./middleware/authMiddleware");
 
+router.get("/protected", authenticateToken, (req, res) => {
+  res.json({ message: "You accessed a protected route", user: req.user });
+});
+
+module.exports = router;
 // ✅ Route: GET restaurant-specific wine price
 router.get("/wine-prices/:wineId", async (req, res) => {
   const { wineId } = req.params;
