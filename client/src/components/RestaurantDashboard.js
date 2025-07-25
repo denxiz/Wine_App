@@ -13,7 +13,7 @@ import {
   DialogActions,
   Switch,
 } from "@mui/material";
-
+import logout from "../utils/logout";
 const restaurantId = "61811ff2-59f7-4b77-986b-fab0c7948a46";
 
 export default function RestaurantDashboard() {
@@ -154,7 +154,7 @@ const normalizeText = (str) =>
           <Button href="#/user-view" variant="contained" sx={{ backgroundColor: "#ffccbc", color: "#100412ff" }}>
             User View
           </Button>
-          <Button href="#/" variant="contained" sx={{ backgroundColor: "#ffccbc", color: "#100412ff" }}>
+          <Button onClick={logout} variant="contained" sx={{ backgroundColor: "#ffccbc", color: "#100412ff" }}>
             Logout
           </Button>
         </Box>

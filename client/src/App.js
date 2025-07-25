@@ -13,22 +13,24 @@ import AddRestaurant from "./components/AddRestaurant";
 import UserView from "./components/UserView";
 import RequestWineForm from "./components/RequestWineForm";
 import RestaurantLibrary from "./components/RestaurantLibrary";
+import ProtectedRoute from "./components/ProtectedRoute";
+
 function App() {
   return (
     <Router>
       <Routes>
-        <Route path="/admin/restaurantlibrary/:id" element={<RestaurantLibrary />} />
-        <Route path="/admin/restaurantlibrary" element = {<RestaurantLibrary />}/>
-        <Route path="/restaurant/requestwineform" element={<RequestWineForm />}/>
-        <Route path="/user-view" element={<UserView />}/>
-        <Route path="/admin/restaurantlist/add" element={<AddRestaurant />} />
-        <Route path="/admin/restaurantlist" element={<RestaurantList />} />
+
+        <Route path="/admin/restaurantlibrary/:id" element={<ProtectedRoute role="admin"><RestaurantLibrary /></ProtectedRoute>} />
+        <Route path="/admin/restaurantlibrary" element = {<ProtectedRoute role="admin"><RestaurantLibrary /></ProtectedRoute>}/>
+        <Route path="/restaurant/requestwineform" element={<ProtectedRoute role="restaurant"><RequestWineForm /></ProtectedRoute>}/>        <Route path="/user-view" element={<UserView />}/>
+        <Route path="/admin/restaurantlist/add" element={<ProtectedRoute role="admin"><AddRestaurant /></ProtectedRoute>} />
+        <Route path="/admin/restaurantlist" element={<ProtectedRoute role="admin"><RestaurantList /></ProtectedRoute>} />
         <Route path="/" element={<SignIn />} />
-        <Route path="/admin/wines" element={<WineLibrary />} />
-        <Route path="/restaurant" element={<RestaurantDashboard />} />
-        <Route path="/admin" element={<AdminDashboard />} />
-        <Route path="/admin/wine-requests" element={<WineRequestReview />} />
-        <Route path="/admin/wines/add" element={<AddWineForm />} />
+        <Route path="/admin/wines" element={<ProtectedRoute role="admin"><WineLibrary /></ProtectedRoute>} />
+        <Route path="/restaurant" element={  <ProtectedRoute role="restaurant"><RestaurantDashboard /></ProtectedRoute>}/>
+        <Route path="/admin" element={ <ProtectedRoute role="admin"><AdminDashboard /></ProtectedRoute>} />
+        <Route path="/admin/wine-requests" element={<ProtectedRoute role="admin"><WineRequestReview /></ProtectedRoute>} />
+        <Route path="/admin/wines/add" element={<ProtectedRoute role="admin"><AddWineForm /></ProtectedRoute>} />
       </Routes>
     </Router>
   );

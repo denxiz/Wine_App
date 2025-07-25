@@ -1,10 +1,24 @@
 const express = require("express");
 const router = express.Router();
 const db = require("./db"); // Supabase client
-const authenticateToken = require("./middleware/authMiddleware");
+
+
+const {
+  authenticateToken,
+  requireRestaurant,
+  requireAdmin
+} = require("./middleware/authMiddleware");
 
 router.get("/protected", authenticateToken, (req, res) => {
   res.json({ message: "You accessed a protected route", user: req.user });
+});
+
+router.get("/restaurant-only", authenticateToken, requireRestaurant, (req, res) => {
+  res.json({ message: "Welcome Restaurant", user: req.user });
+});
+
+router.get("/admin-only", authenticateToken, requireAdmin, (req, res) => {
+  res.json({ message: "Welcome Admin", user: req.user });
 });
 
 module.exports = router;

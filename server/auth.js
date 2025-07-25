@@ -17,6 +17,21 @@ router.post("/login", async (req, res) => {
   }
 
   try {
+    // Check for admin login
+if (email === process.env.ADMIN_EMAIL) {
+  const validAdmin = await bcrypt.compare(password, process.env.ADMIN_PASSWORD_HASH);
+  if (!validAdmin) {
+    return res.status(401).json({ error: "Invalid credentials" });
+  }
+
+  const token = jwt.sign(
+    { email, role: "admin" },
+    JWT_SECRET,
+    { expiresIn: "1d" }
+  );
+
+  return res.json({ token, role: "admin" });
+}
     // Look up restaurant user by email
     const { data, error } = await supabase
       .from("restaurant")
@@ -39,12 +54,18 @@ router.post("/login", async (req, res) => {
       return res.status(401).json({ error: "Invalid credentials" });
     }
 
-    // Create token
-    const token = jwt.sign(
-      { id: restaurant.id, email: restaurant.email, role: "restaurant" },
-      JWT_SECRET,
-      { expiresIn: "1d" }
-    );
+
+// Create token
+const token = jwt.sign(
+  {
+    id: restaurant.id,
+    email: restaurant.email,
+    role: "restaurant" // <- this is what matters
+  },
+  JWT_SECRET,
+  { expiresIn: "1d" }
+);
+
 
     res.json({ token, restaurant });
   } catch (err) {
@@ -54,3 +75,4 @@ router.post("/login", async (req, res) => {
 });
 
 module.exports = router;
+

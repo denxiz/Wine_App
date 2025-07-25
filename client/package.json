@@ -9,6 +9,7 @@
     "@mui/icons-material": "^5.11.0",
     "@mui/material": "^5.11.0",
     "framer-motion": "^10.12.16",
+    "jwt-decode": "^4.0.0",
     "react": "^19.0.0-beta-26f2496093-20240514",
     "react-dom": "^19.0.0-beta-26f2496093-20240514",
     "react-router-dom": "^7.6.3",
