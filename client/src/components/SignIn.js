@@ -48,7 +48,10 @@ if (res.ok && data.token) {
     console.error("Token decoding failed:", err);
     setError("Invalid login response");
   }
-}
+}  else {
+      // Show error returned from backend (e.g., inactive account)
+      setError(data.error || "Login failed");
+    }
     } catch (err) {
       console.error("Login error:", err);
       setError("Server error. Please try again.");

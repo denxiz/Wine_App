@@ -16,29 +16,23 @@ export default function RestaurantList() {
   const [confirmText, setConfirmText] = useState("");
 
   useEffect(() => {
-    setRestaurants([
-      {
-        id: 1,
-        name: "Meyhouse Palo Alto",
-        email: "paloalto@meyhouse.com",
-        contact_name: "Omer",
-        contact_email: "Omer@meyhouse.com",
-        address: "343 University Ave, Palo Alto, CA",
-        wine_count: 12,
-        is_active: true
-      },
-      {
-        id: 2,
-        name: "Meyhouse SF",
-        contact_name: "Omer",
-        contact_email: "Omer@meyhouse.com",
-        email: "sf@meyhouse.com",
-        address: "123 Mission St, San Francisco, CA",
-        wine_count: 8,
-        is_active: false
-      }
-    ]);
-  }, []);
+  fetch("http://localhost:5000/api/restaurants", {
+    headers: {
+      Authorization: `Bearer ${localStorage.getItem("token")}`,
+    },
+  })
+    .then((res) => res.json())
+    .then((data) => {
+    console.log("Fetched restaurant data:", data);
+  if (Array.isArray(data)) {
+    setRestaurants(data);
+  } else {
+    console.error("Expected array, got:", data);
+    setRestaurants([]); 
+  }
+})
+    .catch((err) => console.error("Failed to fetch restaurants:", err));
+}, []);
 
   const handleEdit = (restaurant) => {
     setSelectedRestaurant(restaurant);
@@ -50,13 +44,39 @@ export default function RestaurantList() {
     setOpenConfirm(true);
   };
 
-  const toggleMembership = (id) => {
-    setRestaurants((prev) =>
-      prev.map((r) =>
-        r.id === id ? { ...r, is_active: !r.is_active } : r
-      )
-    );
-  };
+const toggleMembership = async (id) => {
+  const restaurant = restaurants.find((r) => r.id === id);
+  const newStatus = restaurant.member_status === "active" ? "inactive" : "active";
+
+  try {
+    const res = await fetch(`http://localhost:5000/api/restaurants/${id}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+      },
+      body: JSON.stringify({ member_status: newStatus }),
+    });
+
+    const result = await res.json();
+    console.log("PUT result:", result);
+
+    if (res.ok) {
+      setRestaurants((prev) =>
+        prev.map((r) => (r.id === id ? { ...r, member_status: newStatus } : r))
+      );
+    } else {
+      console.error("Failed to update status:", result.error);
+      alert("Error: " + result.error);
+    }
+  } catch (err) {
+    console.error("Request failed:", err);
+    alert("Failed to update member status.");
+  }
+};
+
+
+
   const handleRowClick = (id) => {
   const base = window.location.origin;
   const path = window.location.pathname.includes("github.io")
@@ -91,7 +111,6 @@ export default function RestaurantList() {
           <TableBody>
             {restaurants.map((r) => (
               <TableRow
-  key={r.id}
   hover
   sx={{
     cursor: "pointer",
@@ -110,16 +129,24 @@ export default function RestaurantList() {
                 <TableCell>{r.contact_email}</TableCell>
                 <TableCell>{r.address || "-"}</TableCell>
                 <TableCell>{r.wine_count}</TableCell>
-                <TableCell>
-                  <Switch
-                    checked={r.is_active}
-                    onChange={() => toggleMembership(r.id)}
-                    color="primary"
-                  />
-                  <Typography variant="caption" sx={{ ml: 1 }}>
-                    {r.is_active ? "Active" : "Inactive"}
-                  </Typography>
-                </TableCell>
+ <TableCell>
+  <Box
+    sx={{ display: "flex", alignItems: "center" }}
+    onClick={(e) => e.stopPropagation()}
+  >
+    <Switch
+      checked={r.member_status === "active"}
+      onChange={(e) => {
+        e.stopPropagation(); // prevent row click
+        toggleMembership(r.id);
+      }}
+      color="primary"
+    />
+    <Typography variant="caption" sx={{ ml: 1 }}>
+      {r.member_status === "active" ? "Active" : "Inactive"}
+    </Typography>
+  </Box>
+</TableCell>
                 <TableCell>
                   <IconButton onClick={(e) => { e.stopPropagation(); handleEdit(r); }}>
   <EditIcon />

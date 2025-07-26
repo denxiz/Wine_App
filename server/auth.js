@@ -48,6 +48,10 @@ if (email === process.env.ADMIN_EMAIL) {
 
     console.log("Found restaurant:", restaurant);
 
+    if (restaurant.member_status !== "active") {
+  return res.status(403).json({ error: "Account is inactive. Please contact support." });
+}
+
     // Compare password
     const validPassword = await bcrypt.compare(password, restaurant.password);
     if (!validPassword) {
