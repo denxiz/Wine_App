@@ -10,6 +10,7 @@ import {
   useMediaQuery,
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
+import { jwtDecode } from "jwt-decode";
 
 export default function SignIn() {
   const [email, setEmail] = useState("");
@@ -32,16 +33,22 @@ export default function SignIn() {
 
       const data = await res.json();
 
-      if (res.ok) {
-        localStorage.setItem("token", data.token);
-        if (data.restaurant?.email === "meyhouse@meyhouse.com") {
-          navigate("/restaurant");
-        } else {
-          navigate("/admin");
-        }
-      } else {
-        setError(data.error || "Login failed");
-      }
+if (res.ok && data.token) {
+  localStorage.setItem("token", data.token);
+
+  try {
+    const decoded = jwtDecode(data.token);
+
+    if (decoded.role === "admin") {
+      navigate("/admin");
+    } else {
+      navigate("/restaurant");
+    }
+  } catch (err) {
+    console.error("Token decoding failed:", err);
+    setError("Invalid login response");
+  }
+}
     } catch (err) {
       console.error("Login error:", err);
       setError("Server error. Please try again.");
