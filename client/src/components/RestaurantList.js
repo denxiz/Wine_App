@@ -38,11 +38,36 @@ export default function RestaurantList() {
     setSelectedRestaurant(restaurant);
     setOpenEdit(true);
   };
+const handleDelete = (restaurant) => {
+  setSelectedRestaurant(restaurant);
+  setConfirmText(""); // Reset confirmation input
+  setOpenConfirm(true);
+};
 
-  const handleDelete = (restaurant) => {
-    setSelectedRestaurant(restaurant);
-    setOpenConfirm(true);
-  };
+
+const handleDeleteConfirmed = async () => {
+  try {
+    const res = await fetch(`http://localhost:5000/api/restaurants/${selectedRestaurant.id}`, {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+      },
+    });
+
+    if (res.ok) {
+      setRestaurants((prev) => prev.filter((r) => r.id !== selectedRestaurant.id));
+      setOpenConfirm(false);
+      setConfirmText("");
+    } else {
+      const result = await res.json();
+      alert("Delete failed: " + (result.error || "Unknown error"));
+    }
+  } catch (err) {
+    console.error("Delete error:", err);
+    alert("Request failed");
+  }
+};
+
 
 const toggleMembership = async (id) => {
   const restaurant = restaurants.find((r) => r.id === id);
@@ -128,7 +153,7 @@ const toggleMembership = async (id) => {
                 <TableCell>{r.contact_name}</TableCell>
                 <TableCell>{r.contact_email}</TableCell>
                 <TableCell>{r.address || "-"}</TableCell>
-                <TableCell>{r.wine_count}</TableCell>
+                <TableCell>{r.restaurant_wines?.[0]?.count || 0}</TableCell>
  <TableCell>
   <Box
     sx={{ display: "flex", alignItems: "center" }}
@@ -211,14 +236,48 @@ const toggleMembership = async (id) => {
         <DialogActions>
           <Button onClick={() => setOpenEdit(false)}>Cancel</Button>
           <Button
-            onClick={() => {
-              console.log("Saved restaurant edits:", selectedRestaurant);
-              setOpenEdit(false);
-            }}
-            variant="contained"
-          >
-            Save
-          </Button>
+  variant="contained"
+  onClick={async () => {
+    try {
+      const res = await fetch(`http://localhost:5000/api/restaurants/${selectedRestaurant.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        body: JSON.stringify({
+          name: selectedRestaurant.name,
+          email: selectedRestaurant.email,
+          contact_name: selectedRestaurant.contact_name,
+          contact_email: selectedRestaurant.contact_email,
+          address: selectedRestaurant.address,
+          member_status: selectedRestaurant.member_status 
+        }),
+      });
+
+      if (res.ok) {
+        setRestaurants((prev) =>
+          prev.map((r) =>
+            r.id === selectedRestaurant.id
+              ? { ...r, ...selectedRestaurant }
+              : r
+          )
+        );
+        setOpenEdit(false);
+      } else {
+        const result = await res.json();
+        alert("Update failed: " + (result.error || "Unknown error"));
+      }
+    } catch (err) {
+      console.error("Update error:", err);
+      alert("Request failed");
+    }
+  }}
+>
+  Save
+</Button>
+
+
         </DialogActions>
       </Dialog>
 
@@ -240,17 +299,36 @@ const toggleMembership = async (id) => {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setOpenConfirm(false)}>Cancel</Button>
-          <Button
-            color="error"
-            variant="contained"
-            disabled={confirmText.trim().toLowerCase() !== "delete"}
-            onClick={() => {
-              console.log("Confirmed delete for:", selectedRestaurant?.id);
-              setOpenConfirm(false);
-            }}
-          >
-            Confirm Delete
-          </Button>
+<Button
+  color="error"
+  variant="contained"
+  disabled={confirmText.trim().toLowerCase() !== "delete"}
+  onClick={async () => {
+    try {
+      const res = await fetch(`http://localhost:5000/api/restaurants/${selectedRestaurant.id}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
+
+      if (res.ok) {
+        setRestaurants((prev) => prev.filter((r) => r.id !== selectedRestaurant.id));
+        setOpenConfirm(false);
+        setConfirmText(""); // optional: reset confirm input
+      } else {
+        const result = await res.json();
+        alert("Delete failed: " + (result.error || "Unknown error"));
+      }
+    } catch (err) {
+      console.error("Delete error:", err);
+      alert("Request failed");
+    }
+  }}
+>
+  Confirm Delete
+</Button>
+
         </DialogActions>
       </Dialog>
     </Box>
