@@ -25,7 +25,7 @@ router.get("/admin-only", authenticateToken, requireAdmin, (req, res) => {
 router.get("/restaurants", authenticateToken, requireAdmin, async (req, res) => {
   const { data, error } = await db
     .from("restaurant")
-    .select("id, name, email, contact_name, contact_email, address, member_status","restaurant_wines(count)");
+    .select("id, name, email, contact_name, contact_email, address, member_status, restaurant_wines(count)");
 
   if (error) return res.status(500).json({ error: error.message });
   res.json(data);
@@ -52,23 +52,52 @@ router.get("/wine-prices/:wineId", async (req, res) => {
 });
 
 //active inactive toggling
+
+// DELETE /api/restaurants/:id
+router.delete("/restaurants/:id", authenticateToken, requireAdmin, async (req, res) => {
+  const { id } = req.params;
+
+  const { error } = await db
+    .from("restaurant")
+    .delete()
+    .eq("id", id);
+
+  if (error) {
+    console.error("Delete error:", error);
+    return res.status(500).json({ error: error.message });
+  }
+
+  res.json({ message: "Restaurant deleted successfully" });
+});
+// PUT /api/restaurants/:id
 router.put("/restaurants/:id", authenticateToken, requireAdmin, async (req, res) => {
   const { id } = req.params;
-  const { member_status } = req.body;
+  const updates = req.body;
 
-  if (!["active", "inactive"].includes(member_status)) {
+  console.log("UPDATE REQUEST BODY:", updates);
+  console.log("UPDATE TARGET ID:", id);
+
+  // ✅ Optional validation for member_status if included
+  if (
+    updates.hasOwnProperty("member_status") &&
+    !["active", "inactive"].includes(updates.member_status)
+  ) {
     return res.status(400).json({ error: "Invalid member status" });
   }
 
   const { error } = await db
     .from("restaurant")
-    .update({ member_status })
+    .update(updates)
     .eq("id", id);
 
-  if (error) return res.status(500).json({ error: error.message });
+  if (error) {
+    console.error("Update error:", error);
+    return res.status(500).json({ error: error.message });
+  }
 
-  res.json({ message: "Membership status updated" });
+  res.json({ message: "Restaurant updated" });
 });
+
 
 
 // ✅ Route: PUT update price_override for restaurant/wine
