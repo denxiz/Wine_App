@@ -20,38 +20,26 @@ export default function WineListScreen() {
   const [searchYear, setSearchYear] = useState("");
 
 
-  useEffect(() => {
-    // Sample wines
-    setWines([
-      {
-        id: 1,
-        wine_name: "Château Margaux",
-        company: "Château Margaux Estate",
-        region: "Bordeaux",
-        type: "Red",
-        vintage: 2015,
-        notes: "Rich and complex with notes of blackberry and spice."
-      },
-      {
-        id: 2,
-        wine_name: "Cloudy Bay Sauvignon Blanc",
-        company: "Cloudy Bay",
-        region: "Marlborough",
-        type: "White",
-        vintage: 2021,
-        notes: "Crisp and citrusy with hints of gooseberry."
-      },
-      {
-        id: 3,
-        wine_name: "Antinori Tignanello",
-        company: "Marchesi Antinori",
-        region: "Tuscany",
-        type: "Red",
-        vintage: 2018,
-        notes: "Elegant with cherry, tobacco, and spice."
+useEffect(() => {
+  fetch("http://localhost:5000/api/wines", {
+    headers: {
+      Authorization: `Bearer ${localStorage.getItem("token")}`,
+    },
+  })
+    .then((res) => res.json())
+    .then((data) => {
+      if (Array.isArray(data)) {
+        setWines(data);
+      } else {
+        console.error("Unexpected response:", data);
+        setWines([]);
       }
-    ]);
-  }, []);
+    })
+    .catch((err) => {
+      console.error("Fetch error:", err);
+    });
+}, []);
+
 
 const handleEdit = (wineId) => {
   const wine = wines.find(w => w.id === wineId);
@@ -65,17 +53,62 @@ const handleEdit = (wineId) => {
     setConfirmText("");
     setOpenConfirm(true);
   };
-  const handleSaveEdit = () => {
-  console.log("Edited wine:", selectedWine);
-  setOpenEdit(false);
+
+const handleSaveEdit = async () => {
+  try {
+    const res = await fetch(`http://localhost:5000/api/wines/${selectedWine.id}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+      },
+      body: JSON.stringify(selectedWine),
+    });
+
+    if (res.ok) {
+      setWines((prev) =>
+        prev.map((wine) =>
+          wine.id === selectedWine.id ? { ...wine, ...selectedWine } : wine
+        )
+      );
+      setOpenEdit(false);
+    } else {
+      const err = await res.json();
+      alert("Update failed: " + (err.error || "Unknown error"));
+    }
+  } catch (err) {
+    console.error("Update error:", err);
+    alert("Failed to update wine.");
+  }
 };
 
 
-  const confirmDelete = () => {
-    if (confirmText.toLowerCase() !== "delete") return;
-    console.log("Confirmed delete wine", selectedWineId);
-    setOpenConfirm(false);
-  };
+
+const confirmDelete = async () => {
+  if (confirmText.toLowerCase() !== "delete") return;
+
+  try {
+    const res = await fetch(`http://localhost:5000/api/wines/${selectedWineId}`, {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+      },
+    });
+
+    if (res.ok) {
+      setWines((prev) => prev.filter((w) => w.id !== selectedWineId));
+      setOpenConfirm(false);
+      setConfirmText("");
+    } else {
+      const err = await res.json();
+      alert("Delete failed: " + (err.error || "Unknown error"));
+    }
+  } catch (err) {
+    console.error("Delete error:", err);
+    alert("Failed to delete wine.");
+  }
+};
+
 
   const normalizeText = (text) =>
   text?.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "") || "";
@@ -139,7 +172,9 @@ const handleEdit = (wineId) => {
               <TableCell>Type</TableCell>
               <TableCell>Vintage</TableCell>
               <TableCell>Notes</TableCell>
+              <TableCell>wine_image_url</TableCell>
               <TableCell>Actions</TableCell>
+              
             </TableRow>
           </TableHead>
           <TableBody>
@@ -158,6 +193,7 @@ const handleEdit = (wineId) => {
                   <TableCell>{wine.type}</TableCell>
                   <TableCell>{wine.vintage}</TableCell>
                   <TableCell>{wine.notes}</TableCell>
+                  <TableCell>{wine.wine_image_url}</TableCell>
                   <TableCell>
                     <IconButton onClick={() => handleEdit(wine.id)}><EditIcon fontSize="small" /></IconButton>
                     <IconButton onClick={() => handleDelete(wine.id)}><DeleteIcon fontSize="small" /></IconButton>
@@ -246,6 +282,12 @@ const handleEdit = (wineId) => {
       multiline
       value={selectedWine?.notes || ""}
       onChange={(e) => setSelectedWine(prev => ({ ...prev, notes: e.target.value }))}
+    />
+        <TextField
+      label="Image_Url"
+      multiline
+      value={selectedWine?.wine_image_url || ""}
+      onChange={(e) => setSelectedWine(prev => ({ ...prev, wine_image_url: e.target.value }))}
     />
   </DialogContent>
   <DialogActions>

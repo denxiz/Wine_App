@@ -72,21 +72,8 @@ export default function AdminDashboard() {
         }}
       >
         <Typography variant="h6" fontWeight="bold">
-          Wine List <span style={{ fontWeight: "normal" }}>- ADMIN VIEW</span>
+          Wine List <span style={{ fontWeight: "bold" }}>- Admin</span>
         </Typography>
-        <TextField
-          size="small"
-          placeholder="Search for a user"
-          InputProps={{
-            endAdornment: (
-              <InputAdornment position="end">
-                <IconButton>
-                  <SearchIcon />
-                </IconButton>
-              </InputAdornment>
-            ),
-          }}
-        />
       </Box>
 
       {/* Top Navigation Bar */}
@@ -111,7 +98,7 @@ export default function AdminDashboard() {
       {/* Dashboard Content */}
       <Box sx={{ backgroundColor: "#f4fdfc", p: 2 }}>
         <Typography variant="h6" sx={{ mb: 2 }}>
-          Dashboard - ADMIN VIEW
+          Dashboard
         </Typography>
 
         {/* Stat Boxes */}
@@ -138,41 +125,7 @@ export default function AdminDashboard() {
   </Button>
 </Box>
 
-        {/* Users Table */}
-        <Typography variant="h6" sx={{ mb: 1 }}>Users</Typography>
-        <TableContainer component={Paper}>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>Full Name</TableCell>
-                <TableCell>Username</TableCell>
-                <TableCell>Email</TableCell>
-                <TableCell>Address</TableCell>
-                <TableCell># of wines</TableCell>
-                <TableCell>Actions</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {users.map((user, idx) => (
-                <TableRow key={idx}>
-                  <TableCell>{user.full_name}</TableCell>
-                  <TableCell>{user.username}</TableCell>
-                  <TableCell>{user.email}</TableCell>
-                  <TableCell>{user.address}</TableCell>
-                  <TableCell>{user.wine_count}</TableCell>
-                  <TableCell>
-                    <IconButton onClick={() => handleEdit(user.id)}>
-                      <EditIcon fontSize="small" />
-                    </IconButton>
-                    <IconButton onClick={() => handleDelete(user.id)}>
-                      <DeleteIcon fontSize="small" />
-                    </IconButton>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
+        
       </Box>
 
       {/* Footer */}

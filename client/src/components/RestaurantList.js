@@ -3,7 +3,7 @@ import {
   Box, Typography, Table, TableHead, TableRow, TableCell,
   TableBody, TableContainer, Paper, IconButton, Button,
   Dialog, DialogTitle, DialogContent, DialogActions,
-  TextField, Switch, FormControlLabel
+  TextField, Switch, FormControlLabel, Link
 } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
@@ -331,6 +331,26 @@ const toggleMembership = async (id) => {
 
         </DialogActions>
       </Dialog>
+
+
+      {/* Footer */}
+      <Box
+        sx={{
+          backgroundColor: "#d8f0ef",
+          color: "#fff",
+          padding: "0.75rem 1rem",
+          display: "flex",
+          justifyContent: "space-between",
+          fontSize: "0.9rem",
+          mt: "auto",
+        }}
+      >
+        <Typography fontWeight="bold">Wine List</Typography>
+        <Link href="mailto:support@wineapp.com" underline="hover" color="inherit">
+          Contact Us
+        </Link>
+      </Box>
+    
     </Box>
   );
 }

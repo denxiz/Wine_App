@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   Box, Typography, TextField, Button, Paper, Link
 } from "@mui/material";
@@ -19,20 +19,83 @@ export default function AddRestaurant() {
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    const res = await fetch("/api/admin/restaurants", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
-    });
-    if (res.ok) {
-      alert("Restaurant added successfully!");
-      setForm({ name: "", email: "", address: "", password: "" });
-    } else {
-      alert("Failed to add restaurant");
+const handleSubmit = async (e) => {
+  e.preventDefault();
+
+  let imageUrl = "";
+
+  try {
+    // Step 1: Upload the logo if one is selected
+    if (form.logo) {
+      const formData = new FormData();
+      formData.append("file", form.logo);
+
+const uploadRes = await fetch("http://localhost:5000/api/logo", {
+  method: "POST",
+  headers: {
+    "Authorization": `Bearer ${localStorage.getItem("token")}`
+  },
+  body: formData,
+});
+
+      const contentType = uploadRes.headers.get("content-type");
+
+      if (!uploadRes.ok) {
+        const raw = await uploadRes.text();
+        throw new Error(`Logo upload failed: ${raw}`);
+      }
+
+      if (!contentType.includes("application/json")) {
+        throw new Error("Unexpected response. Logo upload failed.");
+      }
+
+      const uploadData = await uploadRes.json();
+      imageUrl = uploadData.url;
     }
-  };
+
+    // Step 2: Create restaurant payload
+    const restaurantPayload = {
+      name: form.name,
+      email: form.email,
+      contact_name: form.contact_name,
+      contact_email: form.contact_email,
+      address: form.address,
+      password: form.password,
+      logo_url: imageUrl, // this will be "" if not uploaded
+    };
+
+    const res = await fetch("http://localhost:5000/api/admin/restaurants", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+  "Authorization": `Bearer ${localStorage.getItem("token")}`
+  },
+  body: JSON.stringify(restaurantPayload),
+});
+
+    if (!res.ok) {
+      const errorData = await res.json();
+      throw new Error(errorData?.error || "Failed to add restaurant.");
+    }
+
+    alert("✅ Restaurant added!");
+    setForm({
+      name: "",
+      email: "",
+      contact_name: "",
+      contact_email: "",
+      address: "",
+      password: "",
+      logo: null,
+    });
+
+  } catch (err) {
+    console.error("Submit error:", err);
+    alert(`❌ ${err.message}`);
+  }
+};
+
+
 
   return (
     <Box sx={{ minHeight: "100vh", display: "flex", flexDirection: "column", backgroundColor: "#f4fdfc" }}>
@@ -47,37 +110,37 @@ export default function AddRestaurant() {
           <form onSubmit={handleSubmit}>
             <TextField fullWidth label="Name" name="name" value={form.name} onChange={handleChange} sx={{ mb: 2 }} />
             <TextField fullWidth label="Email" name="email" value={form.email} onChange={handleChange} sx={{ mb: 2 }} />
-            <TextField fullWidth label="Contact_Name" name="contact_name" value={form.contact_name} onChange={handleChange} sx={{ mb: 2 }} />
-            <TextField fullWidth label="Contact_Email" name="contact_email" value={form.contact_email} onChange={handleChange} sx={{ mb: 2 }} />
+            <TextField fullWidth label="Contact Name" name="contact_name" value={form.contact_name} onChange={handleChange} sx={{ mb: 2 }} />
+            <TextField fullWidth label="Contact Email" name="contact_email" value={form.contact_email} onChange={handleChange} sx={{ mb: 2 }} />
             <TextField fullWidth label="Address" name="address" value={form.address} onChange={handleChange} sx={{ mb: 2 }} />
             <TextField fullWidth label="Password" type="password" name="password" value={form.password} onChange={handleChange} sx={{ mb: 2 }} />
-<Box sx={{ display: "flex", gap: 2, alignItems: "center", justifyContent: "flex-start", mt: 2 }}>
-  <Button variant="outlined" component="label">
-    Logo Upload
-    <input
-      type="file"
-      accept="image/*"
-      hidden
-      onChange={(e) => {
-        const file = e.target.files[0];
-        if (file) {
-          setForm((prev) => ({ ...prev, logo: file }));
-        }
-      }}
-    />
-  </Button>
 
-  <Button type="submit" variant="contained" color="primary">
-    Submit
-  </Button>
-</Box>
+            <Box sx={{ display: "flex", gap: 2, alignItems: "center", justifyContent: "flex-start", mt: 2 }}>
+              <Button variant="outlined" component="label">
+                Logo Upload
+                <input
+                  type="file"
+                  accept="image/*"
+                  hidden
+                  onChange={(e) => {
+                    const file = e.target.files[0];
+                    if (file) {
+                      setForm((prev) => ({ ...prev, logo: file }));
+                    }
+                  }}
+                />
+              </Button>
 
-{form.logo && (
-  <Typography variant="body2" sx={{ mt: 1 }}>
-    Selected: {form.logo.name}
-  </Typography>
-)}
+              <Button type="submit" variant="contained" color="primary">
+                Submit
+              </Button>
+            </Box>
 
+            {form.logo && (
+              <Typography variant="body2" sx={{ mt: 1 }}>
+                Selected: {form.logo.name}
+              </Typography>
+            )}
           </form>
         </Paper>
       </Box>

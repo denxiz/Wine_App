@@ -1,111 +1,177 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
-  Box, Typography, TextField, Button, RadioGroup, FormControlLabel,
-  Radio, FormControl, FormLabel, Paper, Link
+  Box, Typography, TextField, Button, Paper, Link, RadioGroup, Radio,
+  FormControlLabel, FormControl, FormLabel
 } from "@mui/material";
 
-export default function AddWinePage() {
+export default function AddWineForm() {
   const [form, setForm] = useState({
     wine_name: "",
     company: "",
     country: "",
     region: "",
     vintage: "",
-    type: "Red",
-    body: "Light",
+    type: "",
+    body: "",
     notes: "",
+    image: null,
   });
 
-    const [imageFile, setImageFile] = useState(null);
-
-
-    const handleImageChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setImageFile(file);
-    }
-  };
   const handleChange = (e) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setForm((prev) => ({ ...prev, image: file }));
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const res = await fetch("/api/admin/wines", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
-    });
-    if (res.ok) {
-      alert("Wine added successfully!");
-      setForm({ wine_name: "", company: "", country: "", region: "", vintage: "", type: "Red", body: "Light", notes: "" });
-    } else {
-      alert("Failed to add wine");
+
+    if (!form.image) {
+      alert("❌ Please upload a wine image.");
+      return;
+    }
+
+    let imageUrl = "";
+
+    try {
+      const formData = new FormData();
+      formData.append("file", form.image);
+
+      const uploadRes = await fetch("http://localhost:5000/api/upload-wine-image", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        body: formData,
+      });
+
+      const contentType = uploadRes.headers.get("content-type");
+      if (!uploadRes.ok) {
+        const raw = await uploadRes.text();
+        throw new Error(`Image upload failed: ${raw}`);
+      }
+      if (!contentType.includes("application/json")) {
+        throw new Error("Unexpected response. Image upload failed.");
+      }
+
+      const uploadData = await uploadRes.json();
+      imageUrl = uploadData.url;
+
+      const winePayload = {
+        wine_name: form.wine_name,
+        company: form.company,
+        country: form.country,
+        region: form.region,
+        vintage: parseInt(form.vintage),
+        type: form.type,
+        body: form.body,
+        notes: form.notes,
+        wine_image_url: imageUrl,
+      };
+
+      const res = await fetch("http://localhost:5000/api/wines", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        body: JSON.stringify(winePayload),
+      });
+
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || "Failed to add wine.");
+
+      alert("✅ Wine added!");
+      setForm({
+        wine_name: "",
+        company: "",
+        country: "",
+        region: "",
+        vintage: "",
+        type: "Red",
+        body: "Light",
+        notes: "",
+        image: null,
+      });
+    } catch (err) {
+      console.error("Submit error:", err);
+      alert(`❌ ${err.message}`);
     }
   };
 
   return (
     <Box sx={{ minHeight: "100vh", display: "flex", flexDirection: "column", backgroundColor: "#f4fdfc" }}>
       <Box sx={{ backgroundColor: "#d8f0ef", p: 2, display: "flex", justifyContent: "space-between" }}>
-        <Typography variant= "h6" fontWeight="bold">Wine List</Typography>
+        <Typography fontWeight="bold">Wine List</Typography>
         <Button href="#/admin" variant="contained" sx={{ backgroundColor: "#cddaff", color: "#0026a3" }}>Dashboard</Button>
       </Box>
 
       <Box sx={{ p: 4 }}>
-        <Typography variant="h5" fontWeight="bold" sx={{ mb: 3 }}>Add Wine</Typography>
+        <Typography variant="h6" sx={{ mb: 3 }}>Add Wine</Typography>
         <Paper sx={{ p: 3, backgroundColor: "#ffffff" }}>
           <form onSubmit={handleSubmit}>
             <TextField fullWidth label="Wine Name" name="wine_name" value={form.wine_name} onChange={handleChange} sx={{ mb: 2 }} />
             <TextField fullWidth label="Company" name="company" value={form.company} onChange={handleChange} sx={{ mb: 2 }} />
             <TextField fullWidth label="Country" name="country" value={form.country} onChange={handleChange} sx={{ mb: 2 }} />
             <TextField fullWidth label="Region" name="region" value={form.region} onChange={handleChange} sx={{ mb: 2 }} />
-            <TextField fullWidth label="Vintage" name="vintage" value={form.vintage} onChange={handleChange} sx={{ mb: 2 }} />
+            <TextField fullWidth label="Vintage" name="vintage" type="number" value={form.vintage} onChange={handleChange} sx={{ mb: 2 }} />
 
-            <Box sx={{ display: "flex", flexDirection: "column", gap: 2, mb: 2 }}>
-              <FormControl component="fieldset">
-                <FormLabel component="legend">Type</FormLabel>
-                <RadioGroup name="type" value={form.type} onChange={handleChange}>
-                  <FormControlLabel value="Red" control={<Radio />} label="Red" />
-                  <FormControlLabel value="White" control={<Radio />} label="White" />
-                  <FormControlLabel value="Rose" control={<Radio />} label="Rose" />
-                </RadioGroup>
-              </FormControl>
+            <FormControl sx={{ mb: 2 }}>
+              <FormLabel>Type</FormLabel>
+              <RadioGroup name="type" value={form.type} onChange={handleChange} row>
+                <FormControlLabel value="Red" control={<Radio />} label="Red" />
+                <FormControlLabel value="White" control={<Radio />} label="White" />
+                <FormControlLabel value="Rose" control={<Radio />} label="Rose" />
+              </RadioGroup>
+            </FormControl>
 
-              <FormControl component="fieldset">
-                <FormLabel component="legend">Body</FormLabel>
-                <RadioGroup name="body" value={form.body} onChange={handleChange}>
-                  <FormControlLabel value="Light" control={<Radio />} label="Light" />
-                  <FormControlLabel value="Medium" control={<Radio />} label="Medium" />
-                  <FormControlLabel value="Full" control={<Radio />} label="Full" />
-                </RadioGroup>
-              </FormControl>
-            </Box>
+            <FormControl sx={{ mb: 2 }}>
+              <FormLabel>Body</FormLabel>
+              <RadioGroup name="body" value={form.body} onChange={handleChange} row>
+                <FormControlLabel value="Light" control={<Radio />} label="Light" />
+                <FormControlLabel value="Medium" control={<Radio />} label="Medium" />
+                <FormControlLabel value="Full" control={<Radio />} label="Full" />
+              </RadioGroup>
+            </FormControl>
 
             <TextField
               fullWidth
               multiline
-              rows={4}
+              rows={3}
               label="Notes"
               name="notes"
               value={form.notes}
               onChange={handleChange}
               sx={{ mb: 2 }}
             />
-            <Box sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 2 }}>
+
+            <Box sx={{ display: "flex", gap: 2, alignItems: "center", justifyContent: "flex-start", mt: 2 }}>
               <Button variant="outlined" component="label">
                 Upload Image
-                <input hidden type="file" accept="image/*" onChange={handleImageChange} />
+                <input
+                  type="file"
+                  accept="image/*"
+                  hidden
+                  onChange={handleImageChange}
+                />
               </Button>
-            
-              {imageFile && (
-                <Typography variant="body2">
-                  Selected: {imageFile.name}
-                </Typography>
-              )}
-              
-            <Button type="submit" variant="contained" color="primary">Submit</Button>
+
+              <Button type="submit" variant="contained" color="primary">
+                Submit
+              </Button>
             </Box>
+
+            {form.image && (
+              <Typography variant="body2" sx={{ mt: 1 }}>
+                Selected: {form.image.name}
+              </Typography>
+            )}
           </form>
         </Paper>
       </Box>
