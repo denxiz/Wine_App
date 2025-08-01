@@ -32,7 +32,7 @@ const handleSubmit = async (e) => {
       const formData = new FormData();
       formData.append("file", form.logo);
 
-const uploadRes = await fetch("http://localhost:5000/api/logo", {
+const uploadRes = await fetch(`${apiBaseUrl}/api/logo`, {
   method: "POST",
   headers: {
     "Authorization": `Bearer ${localStorage.getItem("token")}`
@@ -66,7 +66,7 @@ const uploadRes = await fetch("http://localhost:5000/api/logo", {
       logo_url: imageUrl, // this will be "" if not uploaded
     };
 
-    const res = await fetch("http://localhost:5000/api/admin/restaurants", {
+    const res = await fetch(`${apiBaseUrl}/api/admin/restaurants`, {
   method: "POST",
   headers: {
     "Content-Type": "application/json",

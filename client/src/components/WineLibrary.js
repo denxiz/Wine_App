@@ -22,7 +22,7 @@ export default function WineListScreen() {
 
 
 useEffect(() => {
-  fetch("http://localhost:5000/api/wines", {
+  fetch(`${apiBaseUrl}/api/wines`, {
     headers: {
       Authorization: `Bearer ${localStorage.getItem("token")}`,
     },
@@ -57,7 +57,7 @@ const handleEdit = (wineId) => {
 
 const handleSaveEdit = async () => {
   try {
-    const res = await fetch(`http://localhost:5000/api/wines/${selectedWine.id}`, {
+    const res = await fetch(`${apiBaseUrl}/api/wines/${selectedWine.id}`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
@@ -89,7 +89,7 @@ const confirmDelete = async () => {
   if (confirmText.toLowerCase() !== "delete") return;
 
   try {
-    const res = await fetch(`http://localhost:5000/api/wines/${selectedWineId}`, {
+    const res = await fetch(`${apiBaseUrl}/api/wines/${selectedWineId}`, {
       method: "DELETE",
       headers: {
         Authorization: `Bearer ${localStorage.getItem("token")}`,

@@ -39,7 +39,7 @@ const [restaurantLogo, setRestaurantLogo] = useState("");
 
     try {
       // Fetch wines
-      const wineRes = await fetch(`http://localhost:5000/api/restaurant/${restaurantId}/wines`, {
+      const wineRes = await fetch(`${apiBaseUrl}/api/restaurant/${restaurantId}/wines`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -53,7 +53,7 @@ const [restaurantLogo, setRestaurantLogo] = useState("");
 
     try {
       // Fetch restaurant info (logo)
-      const infoRes = await fetch(`http://localhost:5000/api/restaurant/${restaurantId}`, {
+      const infoRes = await fetch(`${apiBaseUrl}/api/restaurant/${restaurantId}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -86,7 +86,7 @@ const [restaurantLogo, setRestaurantLogo] = useState("");
   const token = localStorage.getItem("token");
 
   try {
-    const res = await fetch(`http://localhost:5000/api/restaurant/${restaurantId}/update-availability`, {
+    const res = await fetch(`${apiBaseUrl}/api/restaurant/${restaurantId}/update-availability`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
@@ -121,7 +121,7 @@ const handleSave = async () => {
   const token = localStorage.getItem("token");
 
   try {
-    const res = await fetch(`http://localhost:5000/api/restaurant/${restaurantId}/update-price`, {
+    const res = await fetch(`${apiBaseUrl}/api/restaurant/${restaurantId}/update-price`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
@@ -160,7 +160,7 @@ const handleDeleteConfirm = async () => {
   const token = localStorage.getItem("token");
 
   try {
-    const res = await fetch(`http://localhost:5000/api/restaurant/${restaurantId}/unassign-wine/${selectedWine.id}`, {
+    const res = await fetch(`${apiBaseUrl}/api/restaurant/${restaurantId}/unassign-wine/${selectedWine.id}`, {
       method: "DELETE",
       headers: {
         Authorization: `Bearer ${token}`,

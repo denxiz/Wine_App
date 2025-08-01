@@ -26,7 +26,7 @@ export default function WineRequestReview() {
     setLoading(true);
     const token = getToken();
     try {
-      const res = await fetch("http://localhost:5000/api/admin/wine-requests", {
+      const res = await fetch(`${apiBaseUrl}/api/admin/wine-requests`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
@@ -51,7 +51,7 @@ export default function WineRequestReview() {
   const handleApprove = async () => {
     const token = getToken();
     try {
-      await fetch(`http://localhost:5000/api/admin/wine-requests/${pendingId}/approve`, {
+      await fetch(`${apiBaseUrl}/api/admin/wine-requests/${pendingId}/approve`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -67,7 +67,7 @@ export default function WineRequestReview() {
   const handleReject = async () => {
     const token = getToken();
     try {
-      await fetch(`http://localhost:5000/api/admin/wine-requests/${pendingId}/reject`, {
+      await fetch(`${apiBaseUrl}/api/admin/wine-requests/${pendingId}/reject`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -88,7 +88,7 @@ export default function WineRequestReview() {
   const handleSave = async () => {
     const token = getToken();
     try {
-      await fetch(`http://localhost:5000/api/admin/wine-requests/${selectedRequest.id}`, {
+      await fetch(`${apiBaseUrl}/api/admin/wine-requests/${selectedRequest.id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",

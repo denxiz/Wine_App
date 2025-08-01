@@ -20,9 +20,9 @@ export default function RestaurantList() {
   const [searchName, setSearchName] = useState("");
   const [searchEmail, setSearchEmail] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-
+const apiBaseUrl = process.env.REACT_APP_API_BASE_URL;
   useEffect(() => {
-    fetch("http://localhost:5000/api/restaurants", {
+    fetch(`${apiBaseUrl}/api/restaurants`, {
       headers: {
         Authorization: `Bearer ${localStorage.getItem("token")}`,
       },
@@ -48,7 +48,7 @@ export default function RestaurantList() {
 
   const handleDeleteConfirmed = async () => {
     try {
-      const res = await fetch(`http://localhost:5000/api/restaurants/${selectedRestaurant.id}`, {
+      const res = await fetch(`${apiBaseUrl}/api/restaurants/${selectedRestaurant.id}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
       });
@@ -70,7 +70,7 @@ export default function RestaurantList() {
     const restaurant = restaurants.find((r) => r.id === id);
     const newStatus = restaurant.member_status === "active" ? "inactive" : "active";
     try {
-      const res = await fetch(`http://localhost:5000/api/restaurants/${id}`, {
+      const res = await fetch(`${apiBaseUrl}/api/restaurants/${id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -286,7 +286,7 @@ export default function RestaurantList() {
             variant="contained"
             onClick={async () => {
               try {
-                const res = await fetch(`http://localhost:5000/api/restaurants/${selectedRestaurant.id}`, {
+                const res = await fetch(`${apiBaseUrl}/api/restaurants/${selectedRestaurant.id}`, {
                   method: "PUT",
                   headers: {
                     "Content-Type": "application/json",

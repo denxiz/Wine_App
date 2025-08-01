@@ -45,7 +45,7 @@ const restaurant_id = decoded.restaurant_id;
     restaurant_id
   };
 
-  const response = await fetch("http://localhost:5000/api/request-wine", {
+  const response = await fetch(`${apiBaseUrl}/api/request-wine`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

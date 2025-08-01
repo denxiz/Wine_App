@@ -26,7 +26,7 @@ export default function RestaurantLibrary() {
 
 
   useEffect(() => {
-    fetch(`http://localhost:5000/api/restaurant/${id}/wines`, {
+    fetch(`${apiBaseUrl}/api/restaurant/${id}/wines`, {
       headers: {
         Authorization: `Bearer ${localStorage.getItem("token")}`,
       },
@@ -57,7 +57,7 @@ const handlePriceEdit = (wine) => {
 const submitPriceUpdate = async () => {
   console.log("💲 Submitting new price:", newPrice, "for wine:", editPriceWine?.id);
   try {
-    const res = await fetch(`http://localhost:5000/api/restaurant/${id}/update-price`, {
+    const res = await fetch(`${apiBaseUrl}/api/restaurant/${id}/update-price`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
@@ -89,7 +89,7 @@ const handleUnassignWine = async (wineId) => {
   if (!window.confirm("Are you sure you want to remove this wine from the restaurant?")) return;
 
   try {
-    const res = await fetch(`http://localhost:5000/api/restaurant/${id}/unassign-wine/${wineId}`, {
+    const res = await fetch(`${apiBaseUrl}/api/restaurant/${id}/unassign-wine/${wineId}`, {
       method: "DELETE",
       headers: {
         Authorization: `Bearer ${localStorage.getItem("token")}`,
@@ -110,7 +110,7 @@ const handleUnassignWine = async (wineId) => {
 const toggleAvailable = async (wineId) => {
   console.log("🍷 Sending availability update for wine:", wineId);
   try {
-    const res = await fetch(`http://localhost:5000/api/restaurant/${id}/update-availability`, {
+    const res = await fetch(`${apiBaseUrl}/api/restaurant/${id}/update-availability`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
@@ -144,7 +144,7 @@ const toggleAvailable = async (wineId) => {
       return;
     }
 
-    const res = await fetch("http://localhost:5000/api/wines", {
+    const res = await fetch(`${apiBaseUrl}/api/wines`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
@@ -183,7 +183,7 @@ const toggleAvailable = async (wineId) => {
   }
 
   try {
-    const res = await fetch(`http://localhost:5000/api/restaurant/${id}/assign-wine`, {
+    const res = await fetch(`${apiBaseUrl}/api/restaurant/${id}/assign-wine`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

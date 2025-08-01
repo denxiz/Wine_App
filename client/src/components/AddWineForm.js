@@ -43,7 +43,7 @@ export default function AddWineForm() {
       const formData = new FormData();
       formData.append("file", form.image);
 
-      const uploadRes = await fetch("http://localhost:5000/api/upload-wine-image", {
+      const uploadRes = await fetch(`${apiBaseUrl}/api/upload-wine-image`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token")}`,
@@ -75,7 +75,7 @@ export default function AddWineForm() {
         wine_image_url: imageUrl,
       };
 
-      const res = await fetch("http://localhost:5000/api/wines", {
+      const res = await fetch(`${apiBaseUrl}/api/wines`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

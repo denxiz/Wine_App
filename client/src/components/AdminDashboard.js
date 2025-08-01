@@ -19,21 +19,21 @@ export default function AdminDashboard() {
 useEffect(() => {
   const token = localStorage.getItem("token");
 
-  fetch("http://localhost:5000/api/admin/wines/count", {
+  fetch(`${apiBaseUrl}/admin/wines/count`, {
     headers: { Authorization: `Bearer ${token}` }
   })
     .then((res) => res.json())
     .then((data) => setWineCount(data.count))
     .catch(() => setWineCount("—"));
 
-  fetch("http://localhost:5000/api/admin/restaurants/count", {
+  fetch(`${apiBaseUrl}/api/admin/restaurants/count`, {
     headers: { Authorization: `Bearer ${token}` }
   })
     .then((res) => res.json())
     .then((data) => setRestaurantCount(data.count))
     .catch(() => setRestaurantCount("—"));
 
-  fetch("http://localhost:5000/api/admin/wine-requests/count", {
+  fetch(`${apiBaseUrl}/api/admin/wine-requests/count`, {
     headers: { Authorization: `Bearer ${token}` }
   })
     .then((res) => res.json())
