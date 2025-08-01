@@ -37,7 +37,7 @@ const handleSubmit = async (e) => {
 const token = localStorage.getItem("token");
 const decoded = jwtDecode(token);
 const restaurant_id = decoded.restaurant_id;
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
+const apiBaseUrl = process.env.REACT_APP_API_BASE_URL;
 
   const payload = {
     ...form,

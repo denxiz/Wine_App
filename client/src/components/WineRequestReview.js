@@ -14,6 +14,7 @@ export default function WineRequestReview() {
   const [openEdit, setOpenEdit] = useState(false);
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(false);
+  const apiBaseUrl = process.env.REACT_APP_API_BASE_URL;
 
   // For confirmation dialogs
   const [confirmAction, setConfirmAction] = useState(""); // "approve" or "reject"

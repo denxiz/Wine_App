@@ -67,7 +67,7 @@ export default function UserWineLibrary() {
   const [vintageFilter, setVintageFilter] = useState("");
   const [selectedWine, setSelectedWine] = useState(null);
   const [page, setPage] = useState(0);
-  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
+  const apiBaseUrl = process.env.REACT_APP_API_BASE_URL;
 
   const winesPerPage = 10;
 

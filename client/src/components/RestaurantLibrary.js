@@ -23,7 +23,7 @@ export default function RestaurantLibrary() {
   const [searchRegion, setSearchRegion] = useState("");
   const [searchYear, setSearchYear] = useState("");
   const [statusFilter, setStatusFilter] = useState("all"); // "all", "active", "inactive"
-  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
+  const apiBaseUrl = process.env.REACT_APP_API_BASE_URL;
 
 
   useEffect(() => {

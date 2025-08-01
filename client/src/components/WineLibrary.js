@@ -19,7 +19,7 @@ export default function WineListScreen() {
   const [openEdit, setOpenEdit] = useState(false);
   const [selectedWine, setSelectedWine] = useState(null);
   const [searchYear, setSearchYear] = useState("");
-  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
+  const apiBaseUrl = process.env.REACT_APP_API_BASE_URL;
 
 
 useEffect(() => {
