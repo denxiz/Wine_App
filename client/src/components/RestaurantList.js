@@ -15,6 +15,7 @@ export default function RestaurantList() {
   const [openConfirm, setOpenConfirm] = useState(false);
   const [selectedRestaurant, setSelectedRestaurant] = useState(null);
   const [confirmText, setConfirmText] = useState("");
+  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
   // Search/filter state
   const [searchName, setSearchName] = useState("");

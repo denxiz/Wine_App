@@ -15,6 +15,7 @@ export default function AdminDashboard() {
   const [wineCount, setWineCount] = useState(null);
   const [restaurantCount, setRestaurantCount] = useState(null);
   const [wineRequestCount, setWineRequestCount] = useState(null);
+  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
 useEffect(() => {
   const token = localStorage.getItem("token");

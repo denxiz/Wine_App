@@ -25,7 +25,8 @@ export default function RestaurantDashboard() {
   const [selectedWine, setSelectedWine] = useState(null);
   const [price, setPrice] = useState("");
   const [confirmText, setConfirmText] = useState("");
-const [restaurantLogo, setRestaurantLogo] = useState("");
+  const [restaurantLogo, setRestaurantLogo] = useState("");
+  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
   useEffect(() => {
   const fetchRestaurantData = async () => {
