@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import {
   Box, Typography, TextField, Button, Paper, Link
 } from "@mui/material";
+import { Link as RouterLink } from "react-router-dom";
+
 
 export default function AddRestaurant() {
   const [form, setForm] = useState({
@@ -103,7 +105,25 @@ const uploadRes = await fetch("http://localhost:5000/api/logo", {
         <Typography fontWeight="bold">Wine List</Typography>
         <Button href="#/admin" variant="contained" sx={{ backgroundColor: "#cddaff", color: "#0026a3" }}>Dashboard</Button>
       </Box>
-
+          {/* Top Navigation Bar */}
+          <Box
+            sx={{
+              backgroundColor: "#d8f0ef",
+              px: 2,
+              py: 1,
+              borderBottom: "1px solid #ccc",
+              display: "flex",
+              alignItems: "center",
+              gap: 2,
+              flexWrap: "wrap"
+            }}
+          >
+            <Button variant="text" component={RouterLink} to="/admin/restaurantlist">Restaurants</Button>
+            <Button variant="text" component={RouterLink} to="/admin/wines/">Wine Database</Button>
+            <Button variant="text" component={RouterLink} to="/admin/wines/add">Add Wine</Button>
+            <Button variant="text" component={RouterLink} to="/admin/wine-requests">Wine Requests</Button>
+            <Button variant="text" component={RouterLink} to="/user-view">User View</Button>
+          </Box>
       <Box sx={{ p: 4 }}>
         <Typography variant="h6" sx={{ mb: 3 }}>Add Restaurant</Typography>
         <Paper sx={{ p: 3, backgroundColor: "#ffffff" }}>

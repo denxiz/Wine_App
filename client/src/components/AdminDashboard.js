@@ -3,63 +3,51 @@ import {
   Box,
   Typography,
   Button,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
   Paper,
-  IconButton,
-  TextField,
-  InputAdornment,
   Link,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions
+  Grid,
+  CircularProgress,
 } from "@mui/material";
-import SearchIcon from "@mui/icons-material/Search";
-import EditIcon from "@mui/icons-material/Edit";
-import DeleteIcon from "@mui/icons-material/Delete";
-import { Link as RouterLink } from "react-router-dom"
+import { Link as RouterLink } from "react-router-dom";
+import logout from "../utils/logout";
 
 export default function AdminDashboard() {
-  const [users, setUsers] = useState([]);
-  const [restaurantCount, setRestaurantCount] = useState(0);
-  const [wineManagerCount, setWineManagerCount] = useState(0);
-  const [wineRequestCount, setWineRequestCount] = useState(0);
+  const [wineCount, setWineCount] = useState(null);
+  const [restaurantCount, setRestaurantCount] = useState(null);
+  const [wineRequestCount, setWineRequestCount] = useState(null);
 
-  useEffect(() => {
-    fetch("/api/admin/users")
-      .then((res) => res.json())
-      .then((data) => {
-        setUsers(data);
-        setWineManagerCount(data.length);
-      })
-      .catch((err) => console.error("Failed to load users", err));
+useEffect(() => {
+  const token = localStorage.getItem("token");
 
-    fetch("/api/admin/restaurants/count")
-      .then((res) => res.json())
-      .then((data) => setRestaurantCount(data.count))
-      .catch((err) => console.error("Failed to load restaurants count", err));
+  fetch("http://localhost:5000/api/admin/wines/count", {
+    headers: { Authorization: `Bearer ${token}` }
+  })
+    .then((res) => res.json())
+    .then((data) => setWineCount(data.count))
+    .catch(() => setWineCount("—"));
 
-    fetch("/api/admin/wine-requests/count")
-      .then((res) => res.json())
-      .then((data) => setWineRequestCount(data.count))
-      .catch((err) => console.error("Failed to load wine requests count", err));
-  }, []);
+  fetch("http://localhost:5000/api/admin/restaurants/count", {
+    headers: { Authorization: `Bearer ${token}` }
+  })
+    .then((res) => res.json())
+    .then((data) => setRestaurantCount(data.count))
+    .catch(() => setRestaurantCount("—"));
 
-  const handleEdit = (userId) => {
-    console.log("Edit user", userId);
-  };
+  fetch("http://localhost:5000/api/admin/wine-requests/count", {
+    headers: { Authorization: `Bearer ${token}` }
+  })
+    .then((res) => res.json())
+    .then((data) => setWineRequestCount(data.count))
+    .catch(() => setWineRequestCount("—"));
+}, []);
 
-  const handleDelete = (userId) => {
-    console.log("Delete user", userId);
-  };
+
+  // Loading state
+  const loading = (val) =>
+    val === null ? <CircularProgress size={24} /> : val;
 
   return (
-    <Box sx={{ minHeight: "100vh", display: "flex", flexDirection: "column" , backgroundColor: "#f4fdfc"}}>
+    <Box sx={{ minHeight: "100vh", display: "flex", flexDirection: "column", backgroundColor: "#f4fdfc" }}>
       {/* Top Header */}
       <Box
         sx={{
@@ -74,26 +62,31 @@ export default function AdminDashboard() {
         <Typography variant="h6" fontWeight="bold">
           Wine List <span style={{ fontWeight: "bold" }}>- Admin</span>
         </Typography>
+        <Button onClick={logout} variant="contained" sx={{ backgroundColor: "#cddaff", color: "#0026a3" }}>
+                    Logout
+                  </Button>
       </Box>
 
       {/* Top Navigation Bar */}
-<Box
-  sx={{
-    backgroundColor: "#d8f0ef",
-    px: 2,
-    py: 1,
-    borderBottom: "1px solid #ccc",
-    display: "flex",
-    alignItems: "center",
-    gap: 2,
-    flexWrap: "wrap"
-  }}
->
-  <Button variant="text" component={RouterLink} to="/admin/restaurantlist">Restaurants</Button>
-  <Button variant="text" component={RouterLink} to="/admin/wines/add">Add Wine</Button>
-  <Button variant="text" component={RouterLink} to="/admin/wine-requests">Wine Requests</Button>
-  <Button variant="text" component={RouterLink} to="/user-view">User View</Button>
-</Box>
+      <Box
+        sx={{
+          backgroundColor: "#d8f0ef",
+          px: 2,
+          py: 1,
+          borderBottom: "1px solid #ccc",
+          display: "flex",
+          alignItems: "center",
+          gap: 2,
+          flexWrap: "wrap"
+        }}
+      >
+        <Button variant="text" component={RouterLink} to="/admin/restaurantlist">Restaurants</Button>
+        <Button variant="text" component={RouterLink} to="/admin/restaurantlist/add">Add Restaurant</Button>
+        <Button variant="text" component={RouterLink} to="/admin/wines/">Wine Database</Button>
+        <Button variant="text" component={RouterLink} to="/admin/wines/add">Add Wine</Button>
+        <Button variant="text" component={RouterLink} to="/admin/wine-requests">Wine Requests</Button>
+        <Button variant="text" component={RouterLink} to="/user-view">User View</Button>
+      </Box>
 
       {/* Dashboard Content */}
       <Box sx={{ backgroundColor: "#f4fdfc", p: 2 }}>
@@ -101,31 +94,66 @@ export default function AdminDashboard() {
           Dashboard
         </Typography>
 
-        {/* Stat Boxes */}
-<Box sx={{ display: "flex", justifyContent: "center", flexWrap: "wrap", gap: 10, mb: 3 }}>
-  <Button component={RouterLink} to="/admin/wines" sx={{ p: 0 }}>
-    <Paper elevation={2} sx={{ p: 2, minWidth: 240, transition: "transform 0.2s ease, box-shadow 0.2s ease", "&:hover": { transform: "scale(1.03)", boxShadow: 6 } }}>
-      <Typography variant="subtitle1" fontWeight="bold" color="primary">Wine Manager</Typography>
-      <Typography variant="h5" fontWeight="bold">{wineManagerCount}</Typography>
-    </Paper>
-  </Button>
-
-  <Button component={RouterLink} to="/admin/restaurantlist" sx={{ p: 0 }}>
-    <Paper elevation={2} sx={{ p: 2, minWidth: 240, transition: "transform 0.2s ease, box-shadow 0.2s ease", "&:hover": { transform: "scale(1.03)", boxShadow: 6 } }}>
-      <Typography variant="subtitle1" fontWeight="bold" color="primary">Restaurant List</Typography>
-      <Typography variant="h5" fontWeight="bold">{restaurantCount}</Typography>
-    </Paper>
-  </Button>
-
-  <Button component={RouterLink} to="/admin/wine-requests" sx={{ p: 0 }}>
-    <Paper elevation={2} sx={{ p: 2, minWidth: 240, transition: "transform 0.2s ease, box-shadow 0.2s ease", "&:hover": { transform: "scale(1.03)", boxShadow: 6 } }}>
-      <Typography variant="subtitle1" fontWeight="bold" color="primary">Wine Requests</Typography>
-      <Typography variant="h5" fontWeight="bold">{wineRequestCount}</Typography>
-    </Paper>
-  </Button>
-</Box>
-
-        
+        {/* Stat Boxes (Responsive Grid) */}
+        <Grid container spacing={3} justifyContent="center" sx={{ mb: 3 }}>
+          <Grid item xs={12} sm={6} md={4}>
+            <Button component={RouterLink} to="/admin/wines" sx={{ width: "100%", p: 0 }}>
+              <Paper elevation={2}
+                sx={{
+                  p: 2,
+                  width: "100%",
+                  minHeight: 120,
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  transition: "transform 0.2s ease, box-shadow 0.2s ease",
+                  "&:hover": { transform: "scale(1.03)", boxShadow: 6 }
+                }}
+              >
+                <Typography variant="subtitle1" fontWeight="bold" color="primary">Wine Database</Typography>
+                <Typography variant="h5" fontWeight="bold">{loading(wineCount)}</Typography>
+              </Paper>
+            </Button>
+          </Grid>
+          <Grid item xs={12} sm={6} md={4}>
+            <Button component={RouterLink} to="/admin/restaurantlist" sx={{ width: "100%", p: 0 }}>
+              <Paper elevation={2}
+                sx={{
+                  p: 2,
+                  width: "100%",
+                  minHeight: 120,
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  transition: "transform 0.2s ease, box-shadow 0.2s ease",
+                  "&:hover": { transform: "scale(1.03)", boxShadow: 6 }
+                }}
+              >
+                <Typography variant="subtitle1" fontWeight="bold" color="primary">Restaurant List</Typography>
+                <Typography variant="h5" fontWeight="bold">{loading(restaurantCount)}</Typography>
+              </Paper>
+            </Button>
+          </Grid>
+          <Grid item xs={12} sm={6} md={4}>
+            <Button component={RouterLink} to="/admin/wine-requests" sx={{ width: "100%", p: 0 }}>
+              <Paper elevation={2}
+                sx={{
+                  p: 2,
+                  width: "100%",
+                  minHeight: 120,
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  transition: "transform 0.2s ease, box-shadow 0.2s ease",
+                  "&:hover": { transform: "scale(1.03)", boxShadow: 6 }
+                }}
+              >
+                <Typography variant="subtitle1" fontWeight="bold" color="primary">Wine Requests</Typography>
+                <Typography variant="h5" fontWeight="bold">{loading(wineRequestCount)}</Typography>
+              </Paper>
+            </Button>
+          </Grid>
+        </Grid>
       </Box>
 
       {/* Footer */}

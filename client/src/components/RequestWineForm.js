@@ -3,6 +3,7 @@ import {
   Box, Typography, TextField, Button, RadioGroup, FormControlLabel,
   Radio, FormControl, FormLabel, Paper, Link
 } from "@mui/material";
+import { jwtDecode } from "jwt-decode";
 
 export default function RequestWinePage() {
   const [form, setForm] = useState({
@@ -11,8 +12,8 @@ export default function RequestWinePage() {
     country: "",
     region: "",
     vintage: "",
-    type: "Red",
-    body: "Light",
+    type: "",
+    body: "",
     notes: "",
   });
 
@@ -30,46 +31,44 @@ export default function RequestWinePage() {
     }
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+const handleSubmit = async (e) => {
+  e.preventDefault();
 
-    let imageUrl = null;
-    if (imageFile) {
-      const fileName = `${Date.now()}_${imageFile.name}`;
+const token = localStorage.getItem("token");
+const decoded = jwtDecode(token);
+const restaurant_id = decoded.restaurant_id;
 
-      const res = await fetch("/api/upload", {
-        method: "POST",
-        body: JSON.stringify({ name: fileName, type: imageFile.type }),
-        headers: { "Content-Type": "application/json" },
-      });
-
-      const { url, publicUrl } = await res.json();
-
-      await fetch(url, {
-        method: "PUT",
-        headers: { "Content-Type": imageFile.type },
-        body: imageFile,
-      });
-
-      imageUrl = publicUrl;
-    }
-
-    const payload = { ...form, image_url: imageUrl };
-
-    const response = await fetch("/api/request-wine", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-
-    if (response.ok) {
-      alert("Wine request submitted!");
-      setForm({ wine_name: "", company: "", country: "", region: "", vintage: "", type: "Red", body: "Light", notes: "" });
-      setImageFile(null);
-    } else {
-      alert("Failed to submit request");
-    }
+  const payload = {
+    ...form,
+    vintage: parseInt(form.vintage),
+    image_url: null, // no AWS upload for now
+    restaurant_id
   };
+
+  const response = await fetch("http://localhost:5000/api/request-wine", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (response.ok) {
+    alert("✅ Wine request submitted!");
+    setForm({
+      wine_name: "", company: "", country: "", region: "",
+      vintage: "", type: "Red", body: "Light", notes: ""
+    });
+    setImageFile(null);
+  } else {
+    const error = await response.json();
+    alert(`❌ Failed: ${error.error}`);
+  }
+};
+
+
+
 
   return (
     <Box sx={{ minHeight: "100vh", display: "flex", flexDirection: "column", backgroundColor: "#fff7f2" }}>
@@ -82,13 +81,21 @@ export default function RequestWinePage() {
         <Typography variant="h6" sx={{ mb: 3 }}>Request a Wine</Typography>
         <Paper sx={{ p: 3, backgroundColor: "#ffffff" }}>
           <form onSubmit={handleSubmit}>
-            <TextField fullWidth label="Wine Name" name="wine_name" value={form.wine_name} onChange={handleChange} sx={{ mb: 2 }} />
-            <TextField fullWidth label="Company" name="company" value={form.company} onChange={handleChange} sx={{ mb: 2 }} />
-            <TextField fullWidth label="Country" name="country" value={form.country} onChange={handleChange} sx={{ mb: 2 }} />
-            <TextField fullWidth label="Region" name="region" value={form.region} onChange={handleChange} sx={{ mb: 2 }} />
-            <TextField fullWidth label="Vintage" name="vintage" value={form.vintage} onChange={handleChange} sx={{ mb: 2 }} />
+            <TextField fullWidth label="Wine Name" name="wine_name" value={form.wine_name} onChange={handleChange} required sx={{ mb: 2 }} />
+            <TextField fullWidth label="Company" name="company" value={form.company} onChange={handleChange} required sx={{ mb: 2 }} />
+            <TextField fullWidth label="Country" name="country" value={form.country} onChange={handleChange} required sx={{ mb: 2 }} />
+            <TextField fullWidth label="Region" name="region" value={form.region} onChange={handleChange} required sx={{ mb: 2 }} />
+            <TextField fullWidth label="Vintage" name="vintage" type = "number"  inputProps={{ min: 1000, max: 9999 }} value={form.vintage} onChange={handleChange} required sx={{ mb: 2 }} />
 
             <Box sx={{ display: "flex", flexDirection: "column", gap: 2, mb: 2 }}>
+              <input
+  type="radio"
+  name="type"
+  value={form.type}
+  required
+  style={{ display: "none" }}
+  readOnly
+/>
               <FormControl component="fieldset">
                 <FormLabel component="legend">Type</FormLabel>
                 <RadioGroup name="type" value={form.type} onChange={handleChange}>
@@ -97,7 +104,14 @@ export default function RequestWinePage() {
                   <FormControlLabel value="Rose" control={<Radio />} label="Rose" />
                 </RadioGroup>
               </FormControl>
-
+<input
+  type="radio"
+  name="body"
+  value={form.body}
+  required
+  style={{ display: "none" }}
+  readOnly
+/>
               <FormControl component="fieldset">
                 <FormLabel component="legend">Body</FormLabel>
                 <RadioGroup name="body" value={form.body} onChange={handleChange}>

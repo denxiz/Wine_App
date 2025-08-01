@@ -2,10 +2,11 @@ import React, { useEffect, useState } from "react";
 import {
   Box, Typography, Table, TableBody, TableCell, TableContainer,
   TableHead, TableRow, Paper, IconButton, Button, Dialog,
-  DialogTitle, DialogContent, DialogActions, TextField, Grid
+  DialogTitle, DialogContent, DialogActions, TextField, Grid, Link
 } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
+import { Link as RouterLink } from "react-router-dom";
 
 export default function WineListScreen() {
   const [wines, setWines] = useState([]);
@@ -115,13 +116,32 @@ const confirmDelete = async () => {
 
 
   return (
-    <Box sx={{ padding: 3, backgroundColor: "#f4fdfc" }}>
-      <Box sx={{ backgroundColor: "#f4fdfc", p: 1, display: "flex", justifyContent: "space-between" }}>
+    <Box sx={{ padding: 2, backgroundColor: "#d8f0ef", minHeight: '100vh' }}>
+      <Box sx={{ backgroundColor: "#d8f0ef", p: 1, display: "flex", justifyContent: "space-between" }}>
               <Typography variant = "h5" fontWeight="bold">Wine Database</Typography>
               <Button href="#/admin" variant="contained" sx={{ backgroundColor: "#cddaff", color: "#0026a3" }}>
                 Dashboard
               </Button>
             </Box>
+      {/* Top Navigation Bar */}
+      <Box
+        sx={{
+          backgroundColor: "#d8f0ef",
+          px: 2,
+          py: 1,
+          borderBottom: "1px solid #d8f0ef",
+          display: "flex",
+          alignItems: "center",
+          gap: 2,
+          flexWrap: "wrap"
+        }}
+      >
+        <Button variant="text" component={RouterLink} to="/admin/restaurantlist">Restaurants</Button>
+        <Button variant="text" component={RouterLink} to="/admin/restaurantlist/add">Add Restaurant</Button>
+        <Button variant="text" component={RouterLink} to="/admin/wines/add">Add Wine</Button>
+        <Button variant="text" component={RouterLink} to="/admin/wine-requests">Wine Requests</Button>
+        <Button variant="text" component={RouterLink} to="/user-view">User View</Button>
+      </Box>
 
       {/* Search Fields */}
 <Grid container spacing={2} sx={{ mb: 2 }}>
@@ -295,6 +315,9 @@ const confirmDelete = async () => {
     <Button onClick={handleSaveEdit} variant="contained">Save</Button>
   </DialogActions>
 </Dialog>
+
     </Box>
+
+    
   );
 }

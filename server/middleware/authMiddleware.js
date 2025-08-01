@@ -10,19 +10,24 @@ function authenticateToken(req, res, next) {
 
   jwt.verify(token, JWT_SECRET, (err, user) => {
     if (err) return res.status(403).json({ error: "Invalid token" });
-
+    
     req.user = user; // e.g., { id, email, role }
     next();
   });
 }
 
 // Middleware to allow only restaurants
+// middleware/authMiddleware.js
 function requireRestaurant(req, res, next) {
-  if (req.user.role !== "restaurant") {
-    return res.status(403).json({ error: "Restaurant access only" });
-  }
-  next();
+  const user = req.user;
+
+  if (!user) return res.status(401).json({ error: "Unauthorized" });
+
+  if (user.role === "restaurant" || user.role === "admin") return next();
+
+  return res.status(403).json({ error: "Access denied: must be restaurant or admin" });
 }
+
 
 // Middleware to allow only admins
 function requireAdmin(req, res, next) {

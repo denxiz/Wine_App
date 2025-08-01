@@ -2,75 +2,105 @@ import React, { useEffect, useState } from "react";
 import {
   Box, Typography, Paper, Table, TableBody,
   TableCell, TableContainer, TableHead, TableRow,
-  Button, IconButton, Dialog, DialogTitle, DialogContent,TextField,DialogActions
+  Button, IconButton, Dialog, DialogTitle, DialogContent, TextField, DialogActions
 } from "@mui/material";
 import CheckIcon from "@mui/icons-material/Check";
 import ClearIcon from "@mui/icons-material/Clear";
 import EditIcon from "@mui/icons-material/Edit";
-
+import { Link as RouterLink } from "react-router-dom";
 
 export default function WineRequestReview() {
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [openEdit, setOpenEdit] = useState(false);
-  const [requests, setRequests] = useState([
+  const [requests, setRequests] = useState([]);
+  const [loading, setLoading] = useState(false);
 
+  // For confirmation dialogs
+  const [confirmAction, setConfirmAction] = useState(""); // "approve" or "reject"
+  const [pendingId, setPendingId] = useState(null);
 
-    {
-      id: 1,
-      wine_name: "Château Margaux",
-      company: "Château Margaux Estate",
-      country: "France",
-      region: "Bordeaux",
-      vintage: 2015,
-      type: "Red",
-      body: "Full",
-      notes: "A refined red for our reserve list. Prefer vintage 2015.",
-      restaurant_name: "Meyhouse Palo Alto",
-    },
-    {
-      id: 2,
-      wine_name: "Cloudy Bay Sauvignon Blanc",
-      company: "Cloudy Bay",
-      country: "New Zealand",
-      region: "Marlborough",
-      vintage: 2021,
-      type: "White",
-      body: "Light",
-      notes: "Light and citrusy. Customers have been asking.",
-      restaurant_name: "Meyhouse SF",
-    },
-    {
-      id: 3,
-      wine_name: "Antinori Tignanello",
-      company: "Marchesi Antinori",
-      country: "Italy",
-      region: "Tuscany",
-      vintage: 2018,
-      type: "Red",
-      body: "Medium",
-      notes: "Please consider adding for the upcoming Italian night.",
-      restaurant_name: "Meyhouse San Jose",
+  const getToken = () => localStorage.getItem("token");
+
+  // Fetch all requests
+  const fetchRequests = async () => {
+    setLoading(true);
+    const token = getToken();
+    try {
+      const res = await fetch("http://localhost:5000/api/admin/wine-requests", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      setRequests(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error("Failed to load wine requests", err);
     }
-  ]);
-
-  useEffect(() => {
-    fetch("/api/admin/wine-requests")
-      .then((res) => res.json())
-      .then((data) => setRequests(data))
-      .catch((err) => console.error("Failed to load wine requests", err));
-  }, []);
-
-  const handleApprove = (id) => {
-    console.log("Approve request", id);
+    setLoading(false);
   };
 
-const handleEdit = (request) => {
-  setSelectedRequest(request);
-  setOpenEdit(true);
-};
+  useEffect(() => {
+    fetchRequests();
+  }, []);
 
-  const handleReject = (id) => {
-    console.log("Reject request", id);
+  // Open confirm dialog for approve/reject
+  const handleConfirm = (action, id) => {
+    setConfirmAction(action);
+    setPendingId(id);
+  };
+
+  // Approve (move to wine, delete from requests)
+  const handleApprove = async () => {
+    const token = getToken();
+    try {
+      await fetch(`http://localhost:5000/api/admin/wine-requests/${pendingId}/approve`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      fetchRequests();
+    } catch (err) {
+      alert("Failed to approve");
+    }
+    setConfirmAction("");
+    setPendingId(null);
+  };
+
+  // Reject (delete from requests)
+  const handleReject = async () => {
+    const token = getToken();
+    try {
+      await fetch(`http://localhost:5000/api/admin/wine-requests/${pendingId}/reject`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      fetchRequests();
+    } catch (err) {
+      alert("Failed to reject");
+    }
+    setConfirmAction("");
+    setPendingId(null);
+  };
+
+  // Edit and save request
+  const handleEdit = (request) => {
+    setSelectedRequest({ ...request });
+    setOpenEdit(true);
+  };
+
+  const handleSave = async () => {
+    const token = getToken();
+    try {
+      await fetch(`http://localhost:5000/api/admin/wine-requests/${selectedRequest.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(selectedRequest),
+      });
+      setOpenEdit(false);
+      fetchRequests();
+    } catch (err) {
+      alert("Failed to save changes");
+    }
   };
 
   return (
@@ -80,6 +110,26 @@ const handleEdit = (request) => {
         <Button href="#/admin" variant="contained" sx={{ backgroundColor: "#cddaff", color: "#0026a3" }}>
           Dashboard
         </Button>
+      </Box>
+
+      {/* Top Navigation Bar */}
+      <Box
+        sx={{
+          backgroundColor: "#d8f0ef",
+          px: 2,
+          py: 1,
+          borderBottom: "1px solid #ccc",
+          display: "flex",
+          alignItems: "center",
+          gap: 2,
+          flexWrap: "wrap"
+        }}
+      >
+        <Button variant="text" component={RouterLink} to="/admin/restaurantlist">Restaurants</Button>
+        <Button variant="text" component={RouterLink} to="/admin/restaurantlist/add">Add Restaurant</Button>
+        <Button variant="text" component={RouterLink} to="/admin/wines/">Wine Database</Button>
+        <Button variant="text" component={RouterLink} to="/admin/wines/add">Add Wine</Button>
+        <Button variant="text" component={RouterLink} to="/user-view">User View</Button>
       </Box>
 
       <TableContainer component={Paper} sx={{ backgroundColor: "#f4fdfc" }}>
@@ -95,7 +145,9 @@ const handleEdit = (request) => {
               <TableCell>Body</TableCell>
               <TableCell>Notes</TableCell>
               <TableCell>Requested By</TableCell>
-              <TableCell>Actions</TableCell>
+              <TableCell align="center">Edit</TableCell>
+              <TableCell align="center">Approve</TableCell>
+              <TableCell align="center">Reject</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -110,108 +162,143 @@ const handleEdit = (request) => {
                 <TableCell>{req.body}</TableCell>
                 <TableCell>{req.notes || "-"}</TableCell>
                 <TableCell>{req.restaurant_name}</TableCell>
-                <TableCell>
-                <IconButton onClick={() => handleEdit(req)}><EditIcon /></IconButton>
-
+                <TableCell align="center">
+                  <IconButton onClick={() => handleEdit(req)}>
+                    <EditIcon />
+                  </IconButton>
                 </TableCell>
-                <TableCell>
-                  <IconButton color="success" onClick={() => handleApprove(req.id)}>
+                <TableCell align="center">
+                  <IconButton color="success" onClick={() => handleConfirm("approve", req.id)}>
                     <CheckIcon />
                   </IconButton>
-                  <IconButton color="error" onClick={() => handleReject(req.id)}>
+                </TableCell>
+                <TableCell align="center">
+                  <IconButton color="error" onClick={() => handleConfirm("reject", req.id)}>
                     <ClearIcon />
                   </IconButton>
                 </TableCell>
               </TableRow>
             ))}
+            {requests.length === 0 && !loading && (
+              <TableRow>
+                <TableCell colSpan={13} align="center">
+                  No wine requests found.
+                </TableCell>
+              </TableRow>
+            )}
           </TableBody>
         </Table>
       </TableContainer>
-    
 
-  <Dialog open={openEdit} onClose={() => setOpenEdit(false)}>
-  <DialogTitle>Edit Wine Request</DialogTitle>
-  <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 1 }}>
-    <TextField
-      label="Wine Name"
-      value={selectedRequest?.wine_name || ""}
-      onChange={(e) =>
-        setSelectedRequest((prev) => ({ ...prev, wine_name: e.target.value }))
-      }
-    />
-    <TextField
-      label="Company"
-      value={selectedRequest?.company || ""}
-      onChange={(e) =>
-        setSelectedRequest((prev) => ({ ...prev, company: e.target.value }))
-      }
-    />
-    <TextField
-      label="Country"
-      value={selectedRequest?.country || ""}
-      onChange={(e) =>
-        setSelectedRequest((prev) => ({ ...prev, country: e.target.value }))
-      }
-    />
-    <TextField
-      label="Region"
-      value={selectedRequest?.region || ""}
-      onChange={(e) =>
-        setSelectedRequest((prev) => ({ ...prev, region: e.target.value }))
-      }
-    />
-    <TextField
-      label="Vintage"
-      value={selectedRequest?.vintage || ""}
-      onChange={(e) =>
-        setSelectedRequest((prev) => ({ ...prev, vintage: e.target.value }))
-      }
-    />
-    <TextField
-      label="Type"
-      value={selectedRequest?.type || ""}
-      onChange={(e) =>
-        setSelectedRequest((prev) => ({ ...prev, type: e.target.value }))
-      }
-    />
-    <TextField
-      label="Body"
-      value={selectedRequest?.body || ""}
-      onChange={(e) =>
-        setSelectedRequest((prev) => ({ ...prev, body: e.target.value }))
-      }
-    />
-    <TextField
-      label="Notes"
-      multiline
-      rows={3}
-      value={selectedRequest?.notes || ""}
-      onChange={(e) =>
-        setSelectedRequest((prev) => ({ ...prev, notes: e.target.value }))
-      }
-    />
-    <TextField
-      label="Requested By"
-      value={selectedRequest?.restaurant_name || ""}
-      onChange={(e) =>
-        setSelectedRequest((prev) => ({ ...prev, restaurant_name: e.target.value }))
-      }
-    />
-  </DialogContent>
-  <DialogActions>
-    <Button onClick={() => setOpenEdit(false)}>Cancel</Button>
-    <Button
-      onClick={() => {
-        console.log("Saved wine request edits:", selectedRequest);
-        setOpenEdit(false);
-      }}
-      variant="contained"
-    >
-      Save
-    </Button>
-  </DialogActions>
-  </Dialog>
-</Box>
+      {/* Edit Dialog */}
+      <Dialog open={openEdit} onClose={() => setOpenEdit(false)}>
+        <DialogTitle>Edit Wine Request</DialogTitle>
+        <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 1 }}>
+          {selectedRequest && (
+            <>
+              <TextField
+                label="Wine Name"
+                value={selectedRequest.wine_name || ""}
+                onChange={(e) =>
+                  setSelectedRequest((prev) => ({ ...prev, wine_name: e.target.value }))
+                }
+              />
+              <TextField
+                label="Company"
+                value={selectedRequest.company || ""}
+                onChange={(e) =>
+                  setSelectedRequest((prev) => ({ ...prev, company: e.target.value }))
+                }
+              />
+              <TextField
+                label="Country"
+                value={selectedRequest.country || ""}
+                onChange={(e) =>
+                  setSelectedRequest((prev) => ({ ...prev, country: e.target.value }))
+                }
+              />
+              <TextField
+                label="Region"
+                value={selectedRequest.region || ""}
+                onChange={(e) =>
+                  setSelectedRequest((prev) => ({ ...prev, region: e.target.value }))
+                }
+              />
+              <TextField
+                label="Vintage"
+                value={selectedRequest.vintage || ""}
+                onChange={(e) =>
+                  setSelectedRequest((prev) => ({ ...prev, vintage: e.target.value }))
+                }
+              />
+              <TextField
+                label="Type"
+                value={selectedRequest.type || ""}
+                onChange={(e) =>
+                  setSelectedRequest((prev) => ({ ...prev, type: e.target.value }))
+                }
+              />
+              <TextField
+                label="Body"
+                value={selectedRequest.body || ""}
+                onChange={(e) =>
+                  setSelectedRequest((prev) => ({ ...prev, body: e.target.value }))
+                }
+              />
+              <TextField
+                label="Notes"
+                multiline
+                rows={3}
+                value={selectedRequest.notes || ""}
+                onChange={(e) =>
+                  setSelectedRequest((prev) => ({ ...prev, notes: e.target.value }))
+                }
+              />
+              <TextField
+                label="Requested By"
+                value={selectedRequest.restaurant_name || ""}
+                onChange={(e) =>
+                  setSelectedRequest((prev) => ({ ...prev, restaurant_name: e.target.value }))
+                }
+              />
+            </>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenEdit(false)}>Cancel</Button>
+          <Button onClick={handleSave} variant="contained">
+            Save
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Confirm Dialog */}
+      <Dialog open={!!confirmAction} onClose={() => setConfirmAction("")}>
+        <DialogTitle>
+          {confirmAction === "approve"
+            ? "Approve Wine Request"
+            : "Reject Wine Request"}
+        </DialogTitle>
+        <DialogContent>
+          <Typography>
+            {confirmAction === "approve"
+              ? "Are you sure you want to approve this wine and add it to the main wine list? This will remove the request from the list."
+              : "Are you sure you want to reject and delete this wine request? This cannot be undone."}
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setConfirmAction("")}>Cancel</Button>
+          {confirmAction === "approve" ? (
+            <Button color="success" onClick={handleApprove} variant="contained">
+              Approve & Add
+            </Button>
+          ) : (
+            <Button color="error" onClick={handleReject} variant="contained">
+              Reject & Delete
+            </Button>
+          )}
+        </DialogActions>
+      </Dialog>
+    </Box>
   );
 }
-

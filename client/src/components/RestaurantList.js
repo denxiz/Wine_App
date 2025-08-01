@@ -3,10 +3,11 @@ import {
   Box, Typography, Table, TableHead, TableRow, TableCell,
   TableBody, TableContainer, Paper, IconButton, Button,
   Dialog, DialogTitle, DialogContent, DialogActions,
-  TextField, Switch, FormControlLabel, Link
+  TextField, Switch, Link, MenuItem, Select, InputLabel, FormControl, Grid
 } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
+import { Link as RouterLink } from "react-router-dom";
 
 export default function RestaurantList() {
   const [restaurants, setRestaurants] = useState([]);
@@ -15,109 +16,157 @@ export default function RestaurantList() {
   const [selectedRestaurant, setSelectedRestaurant] = useState(null);
   const [confirmText, setConfirmText] = useState("");
 
+  // Search/filter state
+  const [searchName, setSearchName] = useState("");
+  const [searchEmail, setSearchEmail] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+
   useEffect(() => {
-  fetch("http://localhost:5000/api/restaurants", {
-    headers: {
-      Authorization: `Bearer ${localStorage.getItem("token")}`,
-    },
-  })
-    .then((res) => res.json())
-    .then((data) => {
-    console.log("Fetched restaurant data:", data);
-  if (Array.isArray(data)) {
-    setRestaurants(data);
-  } else {
-    console.error("Expected array, got:", data);
-    setRestaurants([]); 
-  }
-})
-    .catch((err) => console.error("Failed to fetch restaurants:", err));
-}, []);
+    fetch("http://localhost:5000/api/restaurants", {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+      },
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data)) setRestaurants(data);
+        else setRestaurants([]);
+      })
+      .catch((err) => console.error("Failed to fetch restaurants:", err));
+  }, []);
 
   const handleEdit = (restaurant) => {
     setSelectedRestaurant(restaurant);
     setOpenEdit(true);
   };
-const handleDelete = (restaurant) => {
-  setSelectedRestaurant(restaurant);
-  setConfirmText(""); // Reset confirmation input
-  setOpenConfirm(true);
-};
 
+  const handleDelete = (restaurant) => {
+    setSelectedRestaurant(restaurant);
+    setConfirmText(""); // Reset confirmation input
+    setOpenConfirm(true);
+  };
 
-const handleDeleteConfirmed = async () => {
-  try {
-    const res = await fetch(`http://localhost:5000/api/restaurants/${selectedRestaurant.id}`, {
-      method: "DELETE",
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
-      },
-    });
+  const handleDeleteConfirmed = async () => {
+    try {
+      const res = await fetch(`http://localhost:5000/api/restaurants/${selectedRestaurant.id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+      });
+      if (res.ok) {
+        setRestaurants((prev) => prev.filter((r) => r.id !== selectedRestaurant.id));
+        setOpenConfirm(false);
+        setConfirmText("");
+      } else {
+        const result = await res.json();
+        alert("Delete failed: " + (result.error || "Unknown error"));
+      }
+    } catch (err) {
+      console.error("Delete error:", err);
+      alert("Request failed");
+    }
+  };
 
-    if (res.ok) {
-      setRestaurants((prev) => prev.filter((r) => r.id !== selectedRestaurant.id));
-      setOpenConfirm(false);
-      setConfirmText("");
-    } else {
+  const toggleMembership = async (id) => {
+    const restaurant = restaurants.find((r) => r.id === id);
+    const newStatus = restaurant.member_status === "active" ? "inactive" : "active";
+    try {
+      const res = await fetch(`http://localhost:5000/api/restaurants/${id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        body: JSON.stringify({ member_status: newStatus }),
+      });
       const result = await res.json();
-      alert("Delete failed: " + (result.error || "Unknown error"));
+      if (res.ok) {
+        setRestaurants((prev) =>
+          prev.map((r) => (r.id === id ? { ...r, member_status: newStatus } : r))
+        );
+      } else {
+        alert("Error: " + result.error);
+      }
+    } catch (err) {
+      alert("Failed to update member status.");
     }
-  } catch (err) {
-    console.error("Delete error:", err);
-    alert("Request failed");
-  }
-};
-
-
-const toggleMembership = async (id) => {
-  const restaurant = restaurants.find((r) => r.id === id);
-  const newStatus = restaurant.member_status === "active" ? "inactive" : "active";
-
-  try {
-    const res = await fetch(`http://localhost:5000/api/restaurants/${id}`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
-      },
-      body: JSON.stringify({ member_status: newStatus }),
-    });
-
-    const result = await res.json();
-    console.log("PUT result:", result);
-
-    if (res.ok) {
-      setRestaurants((prev) =>
-        prev.map((r) => (r.id === id ? { ...r, member_status: newStatus } : r))
-      );
-    } else {
-      console.error("Failed to update status:", result.error);
-      alert("Error: " + result.error);
-    }
-  } catch (err) {
-    console.error("Request failed:", err);
-    alert("Failed to update member status.");
-  }
-};
-
-
+  };
 
   const handleRowClick = (id) => {
-  const base = window.location.origin;
-  const path = window.location.pathname.includes("github.io")
-    ? `/Wine_App/#/admin/restaurantlibrary/${id}`
-    : `/Wine_App/#/admin/restaurantlibrary/${id}`;
-  window.location.href = base + path;
-};
+    const base = window.location.origin;
+    const path = window.location.pathname.includes("github.io")
+      ? `/Wine_App/#/admin/restaurantlibrary/${id}`
+      : `/Wine_App/#/admin/restaurantlibrary/${id}`;
+    window.location.href = base + path;
+  };
+
+  // Filtering logic
+  const normalize = (v) => v?.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "") || "";
+  const filteredRestaurants = restaurants.filter((r) =>
+    normalize(r.name).includes(normalize(searchName)) &&
+    normalize(r.email).includes(normalize(searchEmail)) &&
+    (
+      statusFilter === "all" ||
+      (statusFilter === "active" && r.member_status === "active") ||
+      (statusFilter === "inactive" && r.member_status === "inactive")
+    )
+  );
+
   return (
     <Box sx={{ minHeight: "100vh", backgroundColor: "#f4fdfc", display: "flex", flexDirection: "column" }}>
       <Box sx={{ backgroundColor: "#d8f0ef", p: 2, display: "flex", justifyContent: "space-between" }}>
         <Typography fontWeight="bold">Restaurant List</Typography>
         <Button href="#/admin" variant="contained" sx={{ backgroundColor: "#cddaff", color: "#0026a3" }}>
-        Dashboard
+          Dashboard
         </Button>
-
       </Box>
+      {/* Top Navigation Bar */}
+      <Box
+        sx={{
+          backgroundColor: "#d8f0ef",
+          px: 2, py: 1, borderBottom: "1px solid #ccc",
+          display: "flex", alignItems: "center", gap: 2, flexWrap: "wrap"
+        }}>
+        <Button variant="text" component={RouterLink} to="/admin/restaurantlist/add">Add Restaurant</Button>
+        <Button variant="text" component={RouterLink} to="/admin/wines/">Wine Database</Button>
+        <Button variant="text" component={RouterLink} to="/admin/wines/add">Add Wine</Button>
+        <Button variant="text" component={RouterLink} to="/admin/wine-requests">Wine Requests</Button>
+        <Button variant="text" component={RouterLink} to="/user-view">User View</Button>
+      </Box>
+
+      {/* Search & Filter */}
+      <Grid container spacing={2} sx={{ p: 2 }}>
+        <Grid item xs={12} sm={4} md={3}>
+          <TextField
+            label="Search by Name"
+            fullWidth
+            value={searchName}
+            onChange={e => setSearchName(e.target.value)}
+          />
+        </Grid>
+        <Grid item xs={12} sm={4} md={3}>
+          <TextField
+            label="Search by Email"
+            fullWidth
+            value={searchEmail}
+            onChange={e => setSearchEmail(e.target.value)}
+          />
+        </Grid>
+        <Grid item xs={12} sm={4} md={3}>
+          <FormControl fullWidth>
+            <InputLabel>Status</InputLabel>
+            <Select
+              value={statusFilter}
+              label="Status"
+              onChange={e => setStatusFilter(e.target.value)}
+              sx={{ backgroundColor: "#fff" }}
+            >
+              <MenuItem value="all">All</MenuItem>
+              <MenuItem value="active">Active</MenuItem>
+              <MenuItem value="inactive">Inactive</MenuItem>
+            </Select>
+          </FormControl>
+        </Grid>
+      </Grid>
 
       <TableContainer component={Paper}>
         <Table>
@@ -134,52 +183,52 @@ const toggleMembership = async (id) => {
             </TableRow>
           </TableHead>
           <TableBody>
-            {restaurants.map((r) => (
+            {filteredRestaurants.map((r) => (
               <TableRow
-  hover
-  sx={{
-    cursor: "pointer",
-    transition: "transform 0.15s ease-in-out, box-shadow 0.15s ease-in-out",
-    "&:hover": {
-      transform: "scale(1.015)",
-      boxShadow: 1,
-      backgroundColor: "#f0ffff",
-    }
-  }}
-  onClick={() => handleRowClick(r.id)}
->
+                key={r.id}
+                hover
+                sx={{
+                  cursor: "pointer",
+                  transition: "transform 0.15s, box-shadow 0.15s",
+                  "&:hover": {
+                    transform: "scale(1.015)",
+                    boxShadow: 1,
+                    backgroundColor: "#f0ffff",
+                  }
+                }}
+                onClick={() => handleRowClick(r.id)}
+              >
                 <TableCell>{r.name}</TableCell>
                 <TableCell>{r.email}</TableCell>
                 <TableCell>{r.contact_name}</TableCell>
                 <TableCell>{r.contact_email}</TableCell>
                 <TableCell>{r.address || "-"}</TableCell>
                 <TableCell>{r.restaurant_wines?.[0]?.count || 0}</TableCell>
- <TableCell>
-  <Box
-    sx={{ display: "flex", alignItems: "center" }}
-    onClick={(e) => e.stopPropagation()}
-  >
-    <Switch
-      checked={r.member_status === "active"}
-      onChange={(e) => {
-        e.stopPropagation(); // prevent row click
-        toggleMembership(r.id);
-      }}
-      color="primary"
-    />
-    <Typography variant="caption" sx={{ ml: 1 }}>
-      {r.member_status === "active" ? "Active" : "Inactive"}
-    </Typography>
-  </Box>
-</TableCell>
                 <TableCell>
-                  <IconButton onClick={(e) => { e.stopPropagation(); handleEdit(r); }}>
-  <EditIcon />
-</IconButton>
-<IconButton onClick={(e) => { e.stopPropagation(); handleDelete(r); }}>
-  <DeleteIcon />
-</IconButton>
-
+                  <Box
+                    sx={{ display: "flex", alignItems: "center" }}
+                    onClick={e => e.stopPropagation()}
+                  >
+                    <Switch
+                      checked={r.member_status === "active"}
+                      onChange={e => {
+                        e.stopPropagation();
+                        toggleMembership(r.id);
+                      }}
+                      color="primary"
+                    />
+                    <Typography variant="caption" sx={{ ml: 1 }}>
+                      {r.member_status === "active" ? "Active" : "Inactive"}
+                    </Typography>
+                  </Box>
+                </TableCell>
+                <TableCell>
+                  <IconButton onClick={e => { e.stopPropagation(); handleEdit(r); }}>
+                    <EditIcon />
+                  </IconButton>
+                  <IconButton onClick={e => { e.stopPropagation(); handleDelete(r); }}>
+                    <DeleteIcon />
+                  </IconButton>
                 </TableCell>
               </TableRow>
             ))}
@@ -187,21 +236,19 @@ const toggleMembership = async (id) => {
         </Table>
       </TableContainer>
 
-<Box sx={{ mt: 2, px: 2 }}>
-  <Button
-    variant="contained"
-    onClick={() => {
-      const base = window.location.origin;
-      const path = window.location.pathname.includes("github.io")
-        ? "/Wine_App/#/admin/restaurantlist/add"
-        : "/Wine_App/#/admin/restaurantlist/add";
-      window.location.href = base + path;
-    }}
-  >
-    Add New Restaurant
-  </Button>
-</Box>
-
+      {/* Add New Restaurant Button */}
+      <Box sx={{ mt: 2, px: 2 }}>
+        <Button
+          variant="contained"
+          onClick={() => {
+            const base = window.location.origin;
+            const path = "/Wine_App/#/admin/restaurantlist/add";
+            window.location.href = base + path;
+          }}
+        >
+          Add New Restaurant
+        </Button>
+      </Box>
 
       {/* Edit Dialog */}
       <Dialog open={openEdit} onClose={() => setOpenEdit(false)}>
@@ -210,74 +257,71 @@ const toggleMembership = async (id) => {
           <TextField
             label="Name"
             value={selectedRestaurant?.name || ""}
-            onChange={(e) => setSelectedRestaurant((prev) => ({ ...prev, name: e.target.value }))}
+            onChange={e => setSelectedRestaurant((prev) => ({ ...prev, name: e.target.value }))}
           />
           <TextField
             label="Email"
             value={selectedRestaurant?.email || ""}
-            onChange={(e) => setSelectedRestaurant((prev) => ({ ...prev, email: e.target.value }))}
+            onChange={e => setSelectedRestaurant((prev) => ({ ...prev, email: e.target.value }))}
           />
           <TextField
             label="Contact_Name"
             value={selectedRestaurant?.contact_name || ""}
-            onChange={(e) => setSelectedRestaurant((prev) => ({ ...prev, contact_name: e.target.value }))}
+            onChange={e => setSelectedRestaurant((prev) => ({ ...prev, contact_name: e.target.value }))}
           />
-                    <TextField
+          <TextField
             label="Contact_Email"
             value={selectedRestaurant?.contact_email || ""}
-            onChange={(e) => setSelectedRestaurant((prev) => ({ ...prev, contact_email: e.target.value }))}
+            onChange={e => setSelectedRestaurant((prev) => ({ ...prev, contact_email: e.target.value }))}
           />
-                    <TextField
+          <TextField
             label="Address"
             value={selectedRestaurant?.address || ""}
-            onChange={(e) => setSelectedRestaurant((prev) => ({ ...prev, address: e.target.value }))}
+            onChange={e => setSelectedRestaurant((prev) => ({ ...prev, address: e.target.value }))}
           />
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setOpenEdit(false)}>Cancel</Button>
           <Button
-  variant="contained"
-  onClick={async () => {
-    try {
-      const res = await fetch(`http://localhost:5000/api/restaurants/${selectedRestaurant.id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-        body: JSON.stringify({
-          name: selectedRestaurant.name,
-          email: selectedRestaurant.email,
-          contact_name: selectedRestaurant.contact_name,
-          contact_email: selectedRestaurant.contact_email,
-          address: selectedRestaurant.address,
-          member_status: selectedRestaurant.member_status 
-        }),
-      });
+            variant="contained"
+            onClick={async () => {
+              try {
+                const res = await fetch(`http://localhost:5000/api/restaurants/${selectedRestaurant.id}`, {
+                  method: "PUT",
+                  headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${localStorage.getItem("token")}`,
+                  },
+                  body: JSON.stringify({
+                    name: selectedRestaurant.name,
+                    email: selectedRestaurant.email,
+                    contact_name: selectedRestaurant.contact_name,
+                    contact_email: selectedRestaurant.contact_email,
+                    address: selectedRestaurant.address,
+                    member_status: selectedRestaurant.member_status
+                  }),
+                });
 
-      if (res.ok) {
-        setRestaurants((prev) =>
-          prev.map((r) =>
-            r.id === selectedRestaurant.id
-              ? { ...r, ...selectedRestaurant }
-              : r
-          )
-        );
-        setOpenEdit(false);
-      } else {
-        const result = await res.json();
-        alert("Update failed: " + (result.error || "Unknown error"));
-      }
-    } catch (err) {
-      console.error("Update error:", err);
-      alert("Request failed");
-    }
-  }}
->
-  Save
-</Button>
-
-
+                if (res.ok) {
+                  setRestaurants((prev) =>
+                    prev.map((r) =>
+                      r.id === selectedRestaurant.id
+                        ? { ...r, ...selectedRestaurant }
+                        : r
+                    )
+                  );
+                  setOpenEdit(false);
+                } else {
+                  const result = await res.json();
+                  alert("Update failed: " + (result.error || "Unknown error"));
+                }
+              } catch (err) {
+                alert("Request failed");
+              }
+            }}
+          >
+            Save
+          </Button>
         </DialogActions>
       </Dialog>
 
@@ -292,46 +336,23 @@ const toggleMembership = async (id) => {
             fullWidth
             autoFocus
             value={confirmText}
-            onChange={(e) => setConfirmText(e.target.value)}
+            onChange={e => setConfirmText(e.target.value)}
             placeholder="delete"
             sx={{ mt: 2 }}
           />
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setOpenConfirm(false)}>Cancel</Button>
-<Button
-  color="error"
-  variant="contained"
-  disabled={confirmText.trim().toLowerCase() !== "delete"}
-  onClick={async () => {
-    try {
-      const res = await fetch(`http://localhost:5000/api/restaurants/${selectedRestaurant.id}`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-      });
-
-      if (res.ok) {
-        setRestaurants((prev) => prev.filter((r) => r.id !== selectedRestaurant.id));
-        setOpenConfirm(false);
-        setConfirmText(""); // optional: reset confirm input
-      } else {
-        const result = await res.json();
-        alert("Delete failed: " + (result.error || "Unknown error"));
-      }
-    } catch (err) {
-      console.error("Delete error:", err);
-      alert("Request failed");
-    }
-  }}
->
-  Confirm Delete
-</Button>
-
+          <Button
+            color="error"
+            variant="contained"
+            disabled={confirmText.trim().toLowerCase() !== "delete"}
+            onClick={handleDeleteConfirmed}
+          >
+            Confirm Delete
+          </Button>
         </DialogActions>
       </Dialog>
-
 
       {/* Footer */}
       <Box
@@ -350,7 +371,6 @@ const toggleMembership = async (id) => {
           Contact Us
         </Link>
       </Box>
-    
     </Box>
   );
 }

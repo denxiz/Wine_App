@@ -64,14 +64,16 @@ const token = jwt.sign(
   {
     id: restaurant.id,
     email: restaurant.email,
-    role: "restaurant" // <- this is what matters
+    role: "restaurant",
+    restaurant_id: restaurant.id
+    
   },
   JWT_SECRET,
   { expiresIn: "1d" }
 );
 
 
-    res.json({ token, restaurant });
+    res.json({ token, restaurantId: restaurant.id });
   } catch (err) {
     console.error("Login error:", err.message);
     res.status(500).json({ error: "Server error" });

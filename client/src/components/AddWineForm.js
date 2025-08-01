@@ -3,7 +3,7 @@ import {
   Box, Typography, TextField, Button, Paper, Link, RadioGroup, Radio,
   FormControlLabel, FormControl, FormLabel
 } from "@mui/material";
-
+import { Link as RouterLink } from "react-router-dom";
 export default function AddWineForm() {
   const [form, setForm] = useState({
     wine_name: "",
@@ -111,7 +111,25 @@ export default function AddWineForm() {
         <Typography fontWeight="bold">Wine List</Typography>
         <Button href="#/admin" variant="contained" sx={{ backgroundColor: "#cddaff", color: "#0026a3" }}>Dashboard</Button>
       </Box>
-
+{/* Top Navigation Bar */}
+      <Box
+        sx={{
+          backgroundColor: "#d8f0ef",
+          px: 2,
+          py: 1,
+          borderBottom: "1px solid #ccc",
+          display: "flex",
+          alignItems: "center",
+          gap: 2,
+          flexWrap: "wrap"
+        }}
+      >
+        <Button variant="text" component={RouterLink} to="/admin/restaurantlist">Restaurants</Button>
+        <Button variant="text" component={RouterLink} to="/admin/restaurantlist/add">Add Restaurant</Button>
+        <Button variant="text" component={RouterLink} to="/admin/wines/">Wine Database</Button>
+        <Button variant="text" component={RouterLink} to="/admin/wine-requests">Wine Requests</Button>
+        <Button variant="text" component={RouterLink} to="/user-view">User View</Button>
+      </Box>
       <Box sx={{ p: 4 }}>
         <Typography variant="h6" sx={{ mb: 3 }}>Add Wine</Typography>
         <Paper sx={{ p: 3, backgroundColor: "#ffffff" }}>

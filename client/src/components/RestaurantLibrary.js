@@ -18,6 +18,12 @@ export default function RestaurantLibrary() {
   const [availableWines, setAvailableWines] = useState([]);
   const [selectedWineId, setSelectedWineId] = useState(null);
   const [priceOverride, setPriceOverride] = useState("");
+  const [searchName, setSearchName] = useState("");
+  const [searchCompany, setSearchCompany] = useState("");
+  const [searchRegion, setSearchRegion] = useState("");
+  const [searchYear, setSearchYear] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all"); // "all", "active", "inactive"
+
 
   useEffect(() => {
     fetch(`http://localhost:5000/api/restaurant/${id}/wines`, {
@@ -223,13 +229,64 @@ const toggleAvailable = async (wineId) => {
         </Typography>
 
         <Box sx={{ display: "flex", gap: 2 }}>
-          <Button variant="contained" onClick={openAssignDialog}>
+          <Button href="#/admin" variant="contained" sx={{ backgroundColor: "#cddaff", color: "#0026a3" }}>
+                    Dashboard
+                  </Button>
+          <Button href="#/admin/restaurantlist" variant="contained" sx={{ backgroundColor: "#cddaff", color: "#0026a3" }}>
+                    Back
+                  </Button>
+          <Button variant="contained" onClick={openAssignDialog} sx={{ backgroundColor: "#cddaff", color: "#0026a3" }}>
   Add Wine to Library
 </Button>
 
 
         </Box>
       </Box>
+<Box sx={{ mb: 2 }}>
+  <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap" }}>
+    <TextField
+      label="Search by Name"
+      value={searchName}
+      onChange={e => setSearchName(e.target.value)}
+      size="small"
+      sx={{ minWidth: 200 }}
+    />
+    <TextField
+      label="Search by Company"
+      value={searchCompany}
+      onChange={e => setSearchCompany(e.target.value)}
+      size="small"
+      sx={{ minWidth: 200 }}
+    />
+    <TextField
+      label="Search by Region"
+      value={searchRegion}
+      onChange={e => setSearchRegion(e.target.value)}
+      size="small"
+      sx={{ minWidth: 200 }}
+    />
+    <TextField
+      label="Search by Year"
+      value={searchYear}
+      onChange={e => setSearchYear(e.target.value)}
+      type="number"
+      size="small"
+      sx={{ minWidth: 120 }}
+    />
+    <FormControl size="small" sx={{ minWidth: 160 }}>
+      <InputLabel>Status</InputLabel>
+      <Select
+        value={statusFilter}
+        label="Status"
+        onChange={e => setStatusFilter(e.target.value)}
+      >
+        <MenuItem value="all">All</MenuItem>
+        <MenuItem value="active">Available</MenuItem>
+        <MenuItem value="inactive">Unavailable</MenuItem>
+      </Select>
+    </FormControl>
+  </Box>
+</Box>
 
       {loading ? (
         <Box sx={{ textAlign: "center", mt: 5 }}>
@@ -254,42 +311,69 @@ const toggleAvailable = async (wineId) => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {wines.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={9} align="center">
-                    No wines found for this restaurant.
-                  </TableCell>
-                </TableRow>
-              ) : (
-                wines.map((wine) => (
-                  <TableRow key={wine.id}>
-                    <TableCell>{wine.wine_name}</TableCell>
-                    <TableCell>{wine.company}</TableCell>
-                    <TableCell>{wine.region}</TableCell>
-                    <TableCell>{wine.country}</TableCell>
-                    <TableCell>{wine.vintage}</TableCell>
-                    <TableCell>{wine.type}</TableCell>
-                    <TableCell>{wine.body}</TableCell>
-                    <TableCell>${wine.price ?? "-"}</TableCell>
-                    <TableCell><Switch checked={!!wine.available} onChange={() => toggleAvailable(wine.id)} color="primary"
-  /></TableCell>
-  
-<TableCell>
-  <IconButton size="small" onClick={() => handlePriceEdit(wine)}>
-    <EditIcon fontSize="small" />
-  </IconButton>
-</TableCell>
-<TableCell><IconButton
-  size="small"
-  onClick={() => handleUnassignWine(wine.id)}
-  sx={{ ml: 1 }}
-  color="error"
->
-  🗑️
-</IconButton></TableCell>
-                  </TableRow>
-                ))
-              )}
+              {wines
+  .filter(wine =>
+    wine.wine_name?.toLowerCase().includes(searchName.toLowerCase()) &&
+    wine.company?.toLowerCase().includes(searchCompany.toLowerCase()) &&
+    wine.region?.toLowerCase().includes(searchRegion.toLowerCase()) &&
+    (searchYear === "" || String(wine.vintage).includes(searchYear)) &&
+    (
+      statusFilter === "all" ||
+      (statusFilter === "active" && wine.available) ||
+      (statusFilter === "inactive" && !wine.available)
+    )
+  )
+  .map((wine) => (
+    <TableRow key={wine.id}>
+      <TableCell>{wine.wine_name}</TableCell>
+      <TableCell>{wine.company}</TableCell>
+      <TableCell>{wine.region}</TableCell>
+      <TableCell>{wine.country}</TableCell>
+      <TableCell>{wine.vintage}</TableCell>
+      <TableCell>{wine.type}</TableCell>
+      <TableCell>{wine.body}</TableCell>
+      <TableCell>${wine.price ?? "-"}</TableCell>
+      <TableCell>
+        <Switch checked={!!wine.available} onChange={() => toggleAvailable(wine.id)} color="primary" />
+      </TableCell>
+      <TableCell>
+        <IconButton size="small" onClick={() => handlePriceEdit(wine)}>
+          <EditIcon fontSize="small" />
+        </IconButton>
+      </TableCell>
+      <TableCell>
+        <IconButton
+          size="small"
+          onClick={() => handleUnassignWine(wine.id)}
+          sx={{ ml: 1 }}
+          color="error"
+        >
+          🗑️
+        </IconButton>
+      </TableCell>
+    </TableRow>
+  ))
+}
+{
+  wines.filter(wine =>
+    wine.wine_name?.toLowerCase().includes(searchName.toLowerCase()) &&
+    wine.company?.toLowerCase().includes(searchCompany.toLowerCase()) &&
+    wine.region?.toLowerCase().includes(searchRegion.toLowerCase()) &&
+    (searchYear === "" || String(wine.vintage).includes(searchYear)) &&
+    (
+      statusFilter === "all" ||
+      (statusFilter === "active" && wine.available) ||
+      (statusFilter === "inactive" && !wine.available)
+    )
+  ).length === 0 && (
+    <TableRow>
+      <TableCell colSpan={11} align="center">
+        No wines found for this restaurant.
+      </TableCell>
+    </TableRow>
+  )
+}
+
             </TableBody>
           </Table>
         </TableContainer>

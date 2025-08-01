@@ -42,13 +42,15 @@ if (res.ok && data.token) {
     if (decoded.role === "admin") {
       navigate("/admin");
     } else {
+      localStorage.setItem("restaurantId", data.restaurantId); // ✅ added line
       navigate("/restaurant");
     }
   } catch (err) {
     console.error("Token decoding failed:", err);
     setError("Invalid login response");
   }
-}  else {
+}
+  else {
       // Show error returned from backend (e.g., inactive account)
       setError(data.error || "Login failed");
     }

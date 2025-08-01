@@ -14,7 +14,6 @@ import {
   Switch,
 } from "@mui/material";
 import logout from "../utils/logout";
-const restaurantId = "61811ff2-59f7-4b77-986b-fab0c7948a46";
 
 export default function RestaurantDashboard() {
   const [region, setRegion] = useState("");
@@ -26,91 +25,162 @@ export default function RestaurantDashboard() {
   const [selectedWine, setSelectedWine] = useState(null);
   const [price, setPrice] = useState("");
   const [confirmText, setConfirmText] = useState("");
+const [restaurantLogo, setRestaurantLogo] = useState("");
 
   useEffect(() => {
-  const initialWines = [
-    {
-      wine: {
-        id: 1,
-        wine_name: "Château Margaux",
-        company: "Château Margaux Estate",
-        region: "Bordeaux",
-        country: "France",
-        vintage: 2015,
-        image_url: "/Margaux-700x700_12.webp",
-      },
-      price_override: 450,
-      is_active: true,
-    },
-    {
-      wine: {
-        id: 2,
-        wine_name: "Cloudy Bay Sauvignon Blanc",
-        company: "Cloudy Bay",
-        region: "Marlborough",
-        country: "New Zealand",
-        vintage: 2021,
-        image_url: "/cloudy bay sauvignon.png",
-      },
-      price_override: 75,
-      is_active: false,
-    },
-  ];
-  setAllWines(initialWines);
-  setWines(initialWines);
+  const fetchRestaurantData = async () => {
+    const restaurantId = localStorage.getItem("restaurantId");
+    const token = localStorage.getItem("token");
+
+    if (!restaurantId || !token) {
+      console.error("Missing auth or restaurantId");
+      return;
+    }
+
+    try {
+      // Fetch wines
+      const wineRes = await fetch(`http://localhost:5000/api/restaurant/${restaurantId}/wines`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      const { wines } = await wineRes.json();
+      setAllWines(wines);
+      setWines(wines);
+    } catch (err) {
+      console.error("Error fetching wines:", err.message);
+    }
+
+    try {
+      // Fetch restaurant info (logo)
+      const infoRes = await fetch(`http://localhost:5000/api/restaurant/${restaurantId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      const data = await infoRes.json();
+      console.log("Restaurant Info:", data); // <- ADD THIS
+      setRestaurantLogo(data.logo_url) // assuming logo_url is the correct column name
+    } catch (err) {
+      console.error("Error fetching restaurant info:", err.message);
+    }
+  };
+
+  fetchRestaurantData();
 }, []);
 
-useEffect(() => {
-  const filtered = allWines.filter((entry) =>
-    normalizeText(entry.wine.region).includes(normalizeText(region)) &&
-    normalizeText(entry.wine.wine_name).includes(normalizeText(wineName))
-  );
-  setWines(filtered);
-}, [region, wineName, allWines]);
 
-const toggleStock = (id) => {
-  setWines((prev) =>
-    prev.map((entry) =>
-      entry.wine.id === id ? { ...entry, is_active: !entry.is_active } : entry
-    )
-  );
+  useEffect(() => {
+    const filtered = allWines.filter((entry) =>
+      normalizeText(entry.region).includes(normalizeText(region)) &&
+      normalizeText(entry.wine_name).includes(normalizeText(wineName))
+    );
+    setWines(filtered);
+  }, [region, wineName, allWines]);
+
+  const normalizeText = (str) =>
+    str?.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "") || "";
+
+ const toggleStock = async (wine_id) => {
+  const restaurantId = localStorage.getItem("restaurantId");
+  const token = localStorage.getItem("token");
+
+  try {
+    const res = await fetch(`http://localhost:5000/api/restaurant/${restaurantId}/update-availability`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ wine_id }),
+    });
+
+    if (!res.ok) throw new Error(await res.text());
+
+    setWines((prev) =>
+      prev.map((entry) =>
+        entry.id === wine_id ? { ...entry, available: !entry.available } : entry
+      )
+    );
+  } catch (err) {
+    console.error(err);
+    alert("Failed to update availability.");
+  }
 };
 
-
-
-
-const handleSearch = () => {
-  const filtered = allWines.filter(entry =>
-    normalizeText(entry.wine.region).includes(normalizeText(region)) &&
-    normalizeText(entry.wine.wine_name).includes(normalizeText(wineName))
-  );
-  setWines(filtered);
-};
-
-const normalizeText = (str) =>
-  str?.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "") || "";
 
 
   const handleEditClick = (entry) => {
     setSelectedWine(entry);
-    setPrice(entry.price_override);
+    setPrice(entry.price);
     setOpenEdit(true);
   };
 
-  const handleSave = () => {
-    console.log("Updated price:", price);
+const handleSave = async () => {
+  const restaurantId = localStorage.getItem("restaurantId");
+  const token = localStorage.getItem("token");
+
+  try {
+    const res = await fetch(`http://localhost:5000/api/restaurant/${restaurantId}/update-price`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        wine_id: selectedWine.id,
+        price_override: parseFloat(price),
+      }),
+    });
+
+    if (!res.ok) throw new Error(await res.text());
+
+    setWines((prev) =>
+      prev.map((entry) =>
+        entry.id === selectedWine.id ? { ...entry, price: parseFloat(price) } : entry
+      )
+    );
+
     setOpenEdit(false);
-  };
+  } catch (err) {
+    console.error(err);
+    alert("Failed to update price.");
+  }
+};
+
+
 
   const handleDeleteClick = (entry) => {
     setSelectedWine(entry);
     setConfirmText("");
     setOpenConfirm(true);
   };
+const handleDeleteConfirm = async () => {
+  const restaurantId = localStorage.getItem("restaurantId");
+  const token = localStorage.getItem("token");
+
+  try {
+    const res = await fetch(`http://localhost:5000/api/restaurant/${restaurantId}/unassign-wine/${selectedWine.id}`, {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!res.ok) throw new Error(await res.text());
+
+    setWines((prev) => prev.filter((wine) => wine.id !== selectedWine.id));
+    setAllWines((prev) => prev.filter((wine) => wine.id !== selectedWine.id));
+    setOpenConfirm(false);
+  } catch (err) {
+    console.error(err);
+    alert("Failed to unassign wine.");
+  }
+};
+
 
   return (
     <Box sx={{ minHeight: "100vh", display: "flex", flexDirection: "column", backgroundColor:"#fff7f2" }}>
-      {/* Header */}
       <Box
         sx={{
           backgroundColor: "#fce8dd",
@@ -122,35 +192,40 @@ const normalizeText = (str) =>
         }}
       >
         <Box sx={{ display: "flex", alignItems: "center" }}>
-          <Typography variant="h6" fontWeight="bold">
-            Wine List 
-          </Typography>
-           <img
-    src={`${process.env.PUBLIC_URL}/logonewomerM2 copy_edited.jpg`}
-    alt="Wine App Logo"
-    style={{marginLeft: 30, height: 60,width: "auto", marginRight: 12 }}
-  />
-        </Box>
-        <Box sx={{
-    display: "flex",
-    flexWrap: "wrap",
-    gap: 1,
-    justifyContent: { xs: "center", sm: "flex-end" },
-    mt: { xs: 1, sm: 0 },
-  }}
->
-  <Button sx={{ backgroundColor: "#ffccbc", color: "#100412ff" }}
-    variant="contained"
-    onClick={() => {
-      const base = window.location.origin;
-      const path = window.location.pathname.includes("github.io")
-        ? "/Wine_App/#/restaurant/requestwineform"
-        : "/Wine_App/#/restaurant/requestwineform";
-      window.location.href = base + path;
+          <Typography variant="h6" fontWeight="bold">Wine List</Typography>
+          {restaurantLogo ? (
+  <img
+    src={restaurantLogo}
+    alt="Restaurant Logo"
+    style={{
+      marginLeft: 30,
+      height: 60,
+      width: "auto",
+      marginRight: 12,
+      borderRadius: 8,
+      objectFit: "contain",
     }}
-  >
-    Request Wine
-  </Button>
+    onError={(e) => {
+      e.target.style.display = "none"; // Hide if load fails
+    }}
+  />
+) : (
+  <Typography sx={{ marginLeft: 2 }}>No Logo</Typography>
+)}
+
+        </Box>
+        <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
+          <Button
+            variant="contained"
+            sx={{ backgroundColor: "#ffccbc", color: "#100412ff" }}
+            onClick={() => {
+              const base = window.location.origin;
+              const path = "/Wine_App/#/restaurant/requestwineform";
+              window.location.href = base + path;
+            }}
+          >
+            Request Wine
+          </Button>
           <Button href="#/user-view" variant="contained" sx={{ backgroundColor: "#ffccbc", color: "#100412ff" }}>
             User View
           </Button>
@@ -160,10 +235,8 @@ const normalizeText = (str) =>
         </Box>
       </Box>
 
-
-      {/* Search Inputs */}
-      <Box sx={{ p: 2}}>
-        <Grid container spacing={2} alignItems="center" justifyContent="space-evenly">
+      <Box sx={{ p: 2 }}>
+        <Grid container spacing={2}>
           <Grid item xs={12} sm={6}>
             <TextField
               label="Search by Region"
@@ -183,7 +256,6 @@ const normalizeText = (str) =>
         </Grid>
       </Box>
 
-      {/* Wine Collection */}
       <Box sx={{ px: 2 }}>
         <Typography variant="h6" sx={{ mt: 2 }}>
           My Wine Collection
@@ -194,62 +266,71 @@ const normalizeText = (str) =>
 
         {wines.map((entry, index) => (
           <Paper
-            key={index}
-            elevation={1}
-            sx={{
-              p: 2,
-              mb: 2,
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-            }}
-          >
-            <Box>
-              <Typography fontWeight="bold">
-                {entry.wine?.wine_name || "Unnamed wine"}
-              </Typography>
-              <Typography>{entry.wine?.company}</Typography>
-              <Typography variant="caption" color="textSecondary">
-                {entry.wine?.region} • {entry.wine?.country} • {entry.wine?.vintage}
-              </Typography>
-              <Typography variant="body2" sx={{ mt: 1 }}>
-                Price: ${entry.price_override ?? "—"}
-              </Typography>
-              {entry.wine?.image_url && (
-                <img
-                  src={
-      entry.wine.image_url?.startsWith("http")
-        ? entry.wine.image_url
-        : `${process.env.PUBLIC_URL}${entry.wine.image_url}`
-    }
-                  alt={entry.wine.wine_name}
-                    style={{
-    maxWidth: "100px",
-    maxHeight: "120px",
-    width: "auto",
-    height: "auto",
-    objectFit: "contain",
-    marginTop: "8px",
-    borderRadius: "6px"
+  key={index}
+  elevation={1}
+  sx={{
+    p: 2,
+    mb: 2,
+    display: "flex",
+    flexDirection: { xs: "column", sm: "row" },
+    justifyContent: "space-between",
+    alignItems: { xs: "flex-start", sm: "center" },
+    gap: 2,
   }}
-                />
-              )}
-            </Box>
-            <Box sx={{ display: "flex", gap: 1 }}>
+>
+  <Box sx={{ display: "flex", alignItems: "center", flex: 1 }}>
+    {entry.wine_image_url && (
+      <Box
+        component="img"
+        src={entry.wine_image_url}
+        alt={entry.wine_name}
+        sx={{
+          height: "100px",
+          width: "auto",
+          objectFit: "contain",
+          mr: 2,
+          borderRadius: 1,
+          transition: "transform 0.3s ease",
+          "&:hover": {
+            transform: "scale(2)",  
+        
+          },
+        }}
+      />
+    )}
 
-<Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-  <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-    <Typography variant="caption" sx={{ mb: 0.5 }}>
-      {entry.is_active ? "In Stock" : "Out of Stock"}
-    </Typography>
-    <Switch
-      checked={entry.is_active}
-      onChange={() => toggleStock(entry.wine.id)}
-      color="primary"
-    />
+    <Box>
+      <Typography fontWeight="bold">{entry.wine_name}</Typography>
+      <Typography>{entry.company}</Typography>
+      <Typography variant="caption" color="textSecondary">
+        {entry.region} • {entry.country} • {entry.vintage}
+      </Typography>
+      <Typography variant="body2" sx={{ mt: 1 }}>
+        Price: ${entry.price ?? "—"}
+      </Typography>
+    </Box>
   </Box>
 
-  <Box sx={{ display: "flex", gap: 1 }}>
+  <Box
+    sx={{
+      display: "flex",
+      flexDirection: { xs: "column", sm:"row" },
+      justifyContent: "flex-end",
+      alignItems: "center",
+      gap: 1,
+      mt: { xs: 2, sm: 0 },
+    }}
+  >
+    <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+      <Typography variant="caption">
+        {entry.available ? "In Stock" : "Out of Stock"}
+      </Typography>
+      <Switch
+        checked={entry.available}
+        onChange={() => toggleStock(entry.id)}
+        color="primary"
+      />
+    </Box>
     <Button
       variant="contained"
       size="small"
@@ -257,7 +338,6 @@ const normalizeText = (str) =>
         backgroundColor: "#0033cc",
         "&:hover": { backgroundColor: "#0026a3" },
         minWidth: "100px",
-        padding: "6px 12px"
       }}
       onClick={() => handleEditClick(entry)}
     >
@@ -267,28 +347,24 @@ const normalizeText = (str) =>
       variant="outlined"
       color="error"
       size="small"
-      sx={{ minWidth: "100px", padding: "6px 12px" }}
       onClick={() => handleDeleteClick(entry)}
     >
       Delete
     </Button>
   </Box>
-  
-</Box>
-</Box>
-          </Paper>
+</Paper>
+
+
         ))}
       </Box>
-  
-      {/* Edit Price Modal */}
+
+      {/* Edit Price Dialog */}
       <Dialog open={openEdit} onClose={() => setOpenEdit(false)}>
         <DialogTitle>Edit Wine Price</DialogTitle>
-        <DialogContent sx={{ mt: 1 }}>
-          <Typography gutterBottom>
-            <strong>{selectedWine?.wine?.wine_name}</strong>
-          </Typography>
+        <DialogContent>
+          <Typography gutterBottom><strong>{selectedWine?.wine_name}</strong></Typography>
           <Typography variant="body2" gutterBottom color="textSecondary">
-            Current Price: ${selectedWine?.price_override}
+            Current Price: ${selectedWine?.price}
           </Typography>
           <TextField
             label="New Price ($)"
@@ -300,19 +376,16 @@ const normalizeText = (str) =>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setOpenEdit(false)}>Cancel</Button>
-          <Button onClick={handleSave} variant="contained">
-            Save
-          </Button>
+          <Button onClick={handleSave} variant="contained">Save</Button>
         </DialogActions>
       </Dialog>
 
-      {/* Delete Confirmation Modal */}
+      {/* Delete Confirmation Dialog */}
       <Dialog open={openConfirm} onClose={() => setOpenConfirm(false)}>
         <DialogTitle>Confirm Delete</DialogTitle>
         <DialogContent>
           <Typography gutterBottom>
-            Type <strong>delete</strong> to confirm deleting{" "}
-            <strong>{selectedWine?.wine?.wine_name}</strong>.
+            Type <strong>delete</strong> to confirm deleting <strong>{selectedWine?.wine_name}</strong>.
           </Typography>
           <TextField
             fullWidth
@@ -322,23 +395,20 @@ const normalizeText = (str) =>
             sx={{ mt: 2 }}
           />
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpenConfirm(false)}>Cancel</Button>
-          <Button
-            onClick={() => {
-              console.log("Confirmed delete:", selectedWine?.wine?.id);
-              setOpenConfirm(false);
-            }}
-            color="error"
-            variant="contained"
-            disabled={confirmText.trim().toLowerCase() !== "delete"}
-          >
-            Confirm Delete
-          </Button>
-        </DialogActions>
+<DialogActions>
+  <Button onClick={() => setOpenConfirm(false)}>Cancel</Button>
+  <Button
+    onClick={handleDeleteConfirm}
+    color="error"
+    variant="contained"
+    disabled={confirmText.trim().toLowerCase() !== "delete"}
+  >
+    Confirm Delete
+  </Button>
+</DialogActions>
+
       </Dialog>
 
-      {/* Footer */}
       <Box
         sx={{
           backgroundColor: "#fce8dd",

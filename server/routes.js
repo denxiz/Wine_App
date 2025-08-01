@@ -233,14 +233,30 @@ router.post("/upload-wine-image", upload.single("file"), async (req, res) => {
   }
 });
 //rest library
+// ✅ Get single restaurant info (for logo etc.)
+router.get("/restaurant/:id", authenticateToken, requireRestaurant, async (req, res) => {
+  const { id } = req.params;
+
+  const { data, error } = await db
+    .from("restaurant")
+    .select("id, name, email, contact_name, contact_email, address, member_status, logo_url")
+    .eq("id", id)
+    .single();
+
+  if (error || !data) {
+    return res.status(404).json({ error: "Restaurant not found" });
+  }
+
+  res.json({ ...data }); // direct object (not wrapped in `data: ...`)
+});
 
 
-router.get("/restaurant/:id/wines", authenticateToken, requireAdmin, async (req, res) => {
+router.get("/restaurant/:id/wines", authenticateToken, requireRestaurant, async (req, res) => {
   const { id } = req.params;
 
   const { data, error } = await db
     .from("restaurant_wines")
-    .select("price_override, available, wine:wine_id (id, wine_name, company, region, country, type, body, vintage)")
+    .select("price_override, available, wine:wine_id (id, wine_name, company, region, country, type, body, vintage, wine_image_url)")
     .eq("restaurant_id", id);
 
   if (error) {
@@ -310,7 +326,7 @@ if (error) {
   res.json({ message: "Wine assigned successfully" });
 });
 
-router.put("/restaurant/:id/update-availability", authenticateToken, requireAdmin, async (req, res) => {
+router.put("/restaurant/:id/update-availability", authenticateToken, requireRestaurant, async (req, res) => {
   const { wine_id } = req.body;
   const { id: restaurant_id } = req.params;
 
@@ -350,7 +366,7 @@ router.put("/restaurant/:id/update-availability", authenticateToken, requireAdmi
 
 
 
-router.put("/restaurant/:id/update-price", authenticateToken, requireAdmin, async (req, res) => {
+router.put("/restaurant/:id/update-price", authenticateToken, requireRestaurant, async (req, res) => {
   const { id: restaurant_id } = req.params;
   const { wine_id, price_override } = req.body;
 
@@ -388,7 +404,7 @@ router.put("/restaurant/:id/update-price", authenticateToken, requireAdmin, asyn
 });
 
 // Unassign a wine from a restaurant
-router.delete("/restaurant/:id/unassign-wine/:wine_id", authenticateToken, requireAdmin, async (req, res) => {
+router.delete("/restaurant/:id/unassign-wine/:wine_id", authenticateToken, requireRestaurant, async (req, res) => {
   const { id: restaurant_id, wine_id } = req.params;
 
   const { error } = await db
@@ -403,6 +419,163 @@ router.delete("/restaurant/:id/unassign-wine/:wine_id", authenticateToken, requi
   }
 
   res.json({ message: "Wine unassigned successfully" });
+});
+
+// ✅ Submit wine request (fixed)
+router.post("/request-wine", authenticateToken, requireRestaurant, async (req, res) => {
+  const {
+    wine_name, company, country, region, vintage, type, body, notes, image_url
+  } = req.body;
+
+  // ✅ Get restaurant_id from authenticated token (secure!)
+  const restaurant_id = req.user.restaurant_id;
+
+  if (!restaurant_id) {
+    return res.status(400).json({ error: "Restaurant ID is missing from token." });
+  }
+
+  // Fetch restaurant name from DB
+  const { data: restaurant, error: restaurantError } = await db
+    .from("restaurant")
+    .select("name")
+    .eq("id", restaurant_id)
+    .single();
+
+  if (restaurantError || !restaurant) {
+    return res.status(500).json({ error: restaurantError?.message || "Restaurant not found" });
+  }
+
+  const { data, error } = await db.from("wine_requests").insert([{
+    wine_name,
+    company,
+    country,
+    region,
+    vintage: parseInt(vintage),
+    type,
+    body,
+    notes,
+    image_url,
+    restaurant_id, // ✅ Using JWT value
+    restaurant_name: restaurant.name
+  }]);
+
+  if (error) return res.status(500).json({ error: error.message });
+
+  res.json({ message: "Wine request submitted successfully", request: data });
+});
+
+
+// --- ADMIN: Get all wine requests
+router.get("/admin/wine-requests", authenticateToken, requireAdmin, async (req, res) => {
+  const { data, error } = await db
+    .from("wine_requests")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  if (error) return res.status(500).json({ error: error.message });
+  res.json(data);
+});
+
+// --- ADMIN: Edit a wine request
+router.put("/admin/wine-requests/:id", authenticateToken, requireAdmin, async (req, res) => {
+  const { id } = req.params;
+  const updates = req.body;
+
+  const { data, error } = await db
+    .from("wine_requests")
+    .update(updates)
+    .eq("id", id)
+    .select();
+
+  if (error) return res.status(500).json({ error: error.message });
+  res.json(data[0]);
+});
+
+// --- ADMIN: Approve (move to wine, delete from wine_requests)
+router.post("/admin/wine-requests/:id/approve", authenticateToken, requireAdmin, async (req, res) => {
+  const { id } = req.params;
+
+  // 1. Fetch the wine request
+  const { data: requests, error: fetchError } = await db
+    .from("wine_requests")
+    .select("*")
+    .eq("id", id);
+
+  if (fetchError || !requests || requests.length === 0) {
+    return res.status(404).json({ error: fetchError?.message || "Request not found" });
+  }
+
+  const wineData = requests[0];
+
+  // 2. Insert into wine table
+  const { error: insertError } = await db
+    .from("wine")
+    .insert([{
+      wine_name: wineData.wine_name,
+      company: wineData.company,
+      country: wineData.country,
+      region: wineData.region,
+      vintage: wineData.vintage,
+      type: wineData.type,
+      body: wineData.body,
+      notes: wineData.notes,
+      wine_image_url: wineData.image_url || null
+    }]);
+
+  if (insertError) {
+    return res.status(500).json({ error: insertError.message });
+  }
+
+  // 3. Delete from wine_requests
+  const { error: deleteError } = await db
+    .from("wine_requests")
+    .delete()
+    .eq("id", id);
+
+  if (deleteError) {
+    return res.status(500).json({ error: deleteError.message });
+  }
+
+  res.json({ message: "Wine approved, added to library, and request deleted." });
+});
+
+// --- ADMIN: Reject (delete from wine_requests)
+router.post("/admin/wine-requests/:id/reject", authenticateToken, requireAdmin, async (req, res) => {
+  const { id } = req.params;
+  const { error } = await db
+    .from("wine_requests")
+    .delete()
+    .eq("id", id);
+
+  if (error) return res.status(500).json({ error: error.message });
+  res.json({ message: "Wine request rejected and deleted." });
+});
+
+// Count wines
+router.get("/admin/wines/count", authenticateToken, requireAdmin, async (req, res) => {
+  const { count, error } = await db
+    .from("wine")
+    .select("*", { count: "exact", head: true });
+  if (error) return res.status(500).json({ error: error.message });
+  res.json({ count });
+});
+
+// Count restaurants
+router.get("/admin/restaurants/count", authenticateToken, requireAdmin, async (req, res) => {
+  const { count, error } = await db
+    .from("restaurant")
+    .select("*", { count: "exact", head: true });
+  if (error) return res.status(500).json({ error: error.message });
+  res.json({ count });
+});
+
+// Count wine requests
+router.get("/admin/wine-requests/count", authenticateToken, requireAdmin, async (req, res) => {
+  const { count, error } = await db
+    .from("wine_requests")
+    .select("*", { count: "exact", head: true });
+  if (error) return res.status(500).json({ error: error.message });
+  res.json({ count });
 });
 
 
