@@ -232,8 +232,8 @@ const confirmDelete = async () => {
     onClick={() => {
       const base = window.location.origin;
       const path = window.location.pathname.includes("github.io")
-        ? "/#/admin/wines/add"
-        : "/#/admin/wines/add";
+        ? "http://my-wine-app-frontend.s3-website.us-east-2.amazonaws.com/#/admin/wines/add"
+        : "http://my-wine-app-frontend.s3-website.us-east-2.amazonaws.com/#/admin/wines/add";
       window.location.href = base + path;
     }}
   >
