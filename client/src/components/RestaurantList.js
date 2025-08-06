@@ -95,8 +95,8 @@ export default function RestaurantList() {
   const handleRowClick = (id) => {
     const base = window.location.origin;
     const path = window.location.pathname.includes("github.io")
-      ? `/Wine_App/#/admin/restaurantlibrary/${id}`
-      : `/Wine_App/#/admin/restaurantlibrary/${id}`;
+      ? `/#/admin/restaurantlibrary/${id}`
+      : `/#/admin/restaurantlibrary/${id}`;
     window.location.href = base + path;
   };
 
@@ -243,7 +243,7 @@ export default function RestaurantList() {
           variant="contained"
           onClick={() => {
             const base = window.location.origin;
-            const path = "/Wine_App/#/admin/restaurantlist/add";
+            const path = "/#/admin/restaurantlist/add";
             window.location.href = base + path;
           }}
         >
