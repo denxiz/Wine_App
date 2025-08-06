@@ -7,8 +7,10 @@ dotenv.config(); // ✅ Load .env variables
 
 
 app.use(express.json());
-app.use(cors());
-
+app.use(cors({
+  origin: 'http://my-wine-app-frontend.s3-website.us-east-2.amazonaws.com', // allow your frontend bucket
+  credentials: true // if you use cookies or auth
+}));
 
 
 // Database connection
