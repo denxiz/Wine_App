@@ -196,18 +196,64 @@ const insertObj = {
 });
 
 
+const { DeleteObjectCommand } = require("@aws-sdk/client-s3");
+
 router.delete("/wines/:id", authenticateToken, requireAdmin, async (req, res) => {
   const { id } = req.params;
 
-  const { error } = await db
+  // 1. Fetch the wine row to get wine_image_url
+  const { data, error: fetchError } = await db
+    .from("wine")
+    .select("wine_image_url")
+    .eq("id", id)
+    .single();
+
+  if (fetchError || !data) {
+    return res.status(404).json({ error: fetchError?.message || "Wine not found" });
+  }
+
+  // 2. If image exists, delete it from S3 first
+  if (data.wine_image_url) {
+    let key = data.wine_image_url.split(".amazonaws.com/")[1];
+    if (!key) {
+      const urlParts = data.wine_image_url.split("/");
+      key = urlParts.slice(4).join("/");
+    }
+
+    console.log("[S3 DELETE] Bucket:", process.env.S3_BUCKET, "| Key:", key, "| Image URL:", data.wine_image_url);
+
+    if (!key) {
+      console.warn("No valid S3 key extracted for deletion.");
+      return res.status(500).json({ error: "Could not determine S3 key for deletion." });
+    }
+
+    try {
+      await s3.send(
+        new DeleteObjectCommand({
+          Bucket: process.env.S3_BUCKET,
+          Key: key,
+        })
+      );
+      console.log("[S3 DELETE] S3 delete success for key:", key);
+    } catch (err) {
+      console.error("[S3 DELETE ERROR] Failed to delete S3 image:", err);
+      return res.status(500).json({ error: "Image could not be deleted from AWS. Wine not deleted." });
+    }
+  }
+
+  // 3. Now, delete the wine from the DB
+  const { error: deleteError } = await db
     .from("wine")
     .delete()
     .eq("id", id);
 
-  if (error) return res.status(500).json({ error: error.message });
+  if (deleteError) {
+    return res.status(500).json({ error: deleteError.message });
+  }
 
-  res.json({ message: "Wine deleted successfully" });
+  res.json({ message: "Wine and its image deleted successfully." });
 });
+
 
 router.post("/upload-wine-image", upload.single("file"), async (req, res) => {
   try {
