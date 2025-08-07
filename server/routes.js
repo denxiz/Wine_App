@@ -196,7 +196,6 @@ const insertObj = {
 });
 
 
-const { DeleteObjectCommand } = require("@aws-sdk/client-s3");
 
 router.delete("/wines/:id", authenticateToken, requireAdmin, async (req, res) => {
   const { id } = req.params;
