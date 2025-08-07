@@ -11,7 +11,7 @@ const {
   requireRestaurant,
   requireAdmin
 } = require("./middleware/authMiddleware");
-
+const { DeleteObjectCommand } = require("@aws-sdk/client-s3");
 
 
 
@@ -542,23 +542,57 @@ router.post("/admin/wine-requests/:id/approve", authenticateToken, requireAdmin,
 // --- ADMIN: Reject (delete from wine_requests)
 router.post("/admin/wine-requests/:id/reject", authenticateToken, requireAdmin, async (req, res) => {
   const { id } = req.params;
-  const { error } = await db
+
+  // 1. Fetch the request to get the image_url
+  const { data, error: fetchError } = await db
+    .from("wine_requests")
+    .select("image_url")
+    .eq("id", id)
+    .single();
+
+  if (fetchError || !data) {
+    return res.status(404).json({ error: fetchError?.message || "Request not found" });
+  }
+
+  // 2. Delete from DB
+  const { error: deleteError } = await db
     .from("wine_requests")
     .delete()
     .eq("id", id);
 
-  if (error) return res.status(500).json({ error: error.message });
+  if (deleteError) {
+    return res.status(500).json({ error: deleteError.message });
+  }
+
+  // 3. Optionally delete image from S3 if image_url exists
+  if (data.image_url) {
+    let key = data.image_url.split(".amazonaws.com/")[1];
+    if (!key) {
+      // fallback for any weird URL
+      const urlParts = data.image_url.split("/");
+      key = urlParts.slice(4).join("/"); // after https:, '', bucket, region
+    }
+
+    if (key) {
+      try {
+        await s3.send(
+          new DeleteObjectCommand({
+            Bucket: process.env.S3_BUCKET,
+            Key: key,
+          })
+        );
+        console.log("S3 image deleted:", key);
+      } catch (err) {
+        console.error("Failed to delete S3 image:", err);
+      }
+    } else {
+      console.warn("Could not determine S3 key for deletion:", data.image_url);
+    }
+  }
+
   res.json({ message: "Wine request rejected and deleted." });
 });
 
-// Count wines
-router.get("/admin/wines/count", authenticateToken, requireAdmin, async (req, res) => {
-  const { count, error } = await db
-    .from("wine")
-    .select("*", { count: "exact", head: true });
-  if (error) return res.status(500).json({ error: error.message });
-  res.json({ count });
-});
 
 // Count restaurants
 router.get("/admin/restaurants/count", authenticateToken, requireAdmin, async (req, res) => {

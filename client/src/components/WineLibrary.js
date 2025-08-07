@@ -19,6 +19,8 @@ export default function WineListScreen() {
   const [openEdit, setOpenEdit] = useState(false);
   const [selectedWine, setSelectedWine] = useState(null);
   const [searchYear, setSearchYear] = useState("");
+  const [searchCountry, setSearchCountry] = useState("");
+
   const apiBaseUrl = process.env.REACT_APP_API_BASE_URL;
 
 
@@ -163,6 +165,14 @@ const confirmDelete = async () => {
     />
   </Grid>
   <Grid item xs={12} sm={6} md={3}>
+  <TextField
+    label="Search by Country"
+    fullWidth
+    value={searchCountry}
+    onChange={(e) => setSearchCountry(e.target.value)}
+  />
+</Grid>
+  <Grid item xs={12} sm={6} md={3}>
     <TextField
       label="Search by Region"
       fullWidth
@@ -189,6 +199,7 @@ const confirmDelete = async () => {
             <TableRow>
               <TableCell>Wine Name</TableCell>
               <TableCell>Company</TableCell>
+              <TableCell>Country</TableCell>
               <TableCell>Region</TableCell>
               <TableCell>Type</TableCell>
               <TableCell>Vintage</TableCell>
@@ -201,20 +212,38 @@ const confirmDelete = async () => {
           <TableBody>
             {wines
               .filter((wine) =>
-                normalizeText(wine.wine_name).includes(normalizeText(searchName)) &&
-                wine.company.toLowerCase().includes(searchCompany.toLowerCase()) &&
-                wine.region.toLowerCase().includes(searchRegion.toLowerCase())&&
-                (searchYear === "" || String(wine.vintage).includes(searchYear))
-              )
+  (searchName === "" || normalizeText(wine.wine_name).startsWith(normalizeText(searchName))) &&
+  (searchCompany === "" || wine.company.toLowerCase().startsWith(searchCompany.toLowerCase())) &&
+  (searchRegion === "" || wine.region.toLowerCase().startsWith(searchRegion.toLowerCase())) &&
+  (searchCountry === "" || (wine.country || "").toLowerCase().startsWith(searchCountry.toLowerCase())) &&
+  (searchYear === "" || String(wine.vintage).startsWith(searchYear))
+)
+
               .map((wine) => (
                 <TableRow key={wine.id}>
                   <TableCell>{wine.wine_name}</TableCell>
                   <TableCell>{wine.company}</TableCell>
+                  <TableCell>{wine.country}</TableCell>
                   <TableCell>{wine.region}</TableCell>
                   <TableCell>{wine.type}</TableCell>
                   <TableCell>{wine.vintage}</TableCell>
-                  <TableCell>{wine.notes}</TableCell>
-                  <TableCell>{wine.wine_image_url}</TableCell>
+                  <TableCell sx={{ whiteSpace: "pre-line", wordBreak: "break-word", maxWidth: 350 }}>
+                    {wine.notes}</TableCell>
+                  <TableCell>
+  {wine.wine_image_url ? (
+    <a
+      href={wine.wine_image_url}
+      target="_blank"
+      rel="noopener noreferrer"
+      style={{ color: "#1976d2", wordBreak: "break-all" }}
+    >
+      {wine.wine_image_url}
+    </a>
+  ) : (
+    "-"
+  )}
+</TableCell>
+
                   <TableCell>
                     <IconButton onClick={() => handleEdit(wine.id)}><EditIcon fontSize="small" /></IconButton>
                     <IconButton onClick={() => handleDelete(wine.id)}><DeleteIcon fontSize="small" /></IconButton>
@@ -232,8 +261,8 @@ const confirmDelete = async () => {
     onClick={() => {
       const base = window.location.origin;
       const path = window.location.pathname.includes("github.io")
-        ? "http://my-wine-app-frontend.s3-website.us-east-2.amazonaws.com/#/admin/wines/add"
-        : "http://my-wine-app-frontend.s3-website.us-east-2.amazonaws.com/#/admin/wines/add";
+        ? "#/admin/wines/add"
+        : "#/admin/wines/add";
       window.location.href = base + path;
     }}
   >
@@ -281,6 +310,11 @@ const confirmDelete = async () => {
       label="Company"
       value={selectedWine?.company || ""}
       onChange={(e) => setSelectedWine(prev => ({ ...prev, company: e.target.value }))}
+    />
+    <TextField
+      label="Country"
+      value={selectedWine?.country || ""}
+      onChange={(e) => setSelectedWine(prev => ({ ...prev, country: e.target.value }))}
     />
     <TextField
       label="Region"

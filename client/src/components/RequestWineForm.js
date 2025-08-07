@@ -33,16 +33,37 @@ export default function RequestWinePage() {
 
 const handleSubmit = async (e) => {
   e.preventDefault();
+  const token = localStorage.getItem("token");
+  const decoded = jwtDecode(token);
+  const restaurant_id = decoded.restaurant_id;
+  const apiBaseUrl = process.env.REACT_APP_API_BASE_URL;
 
-const token = localStorage.getItem("token");
-const decoded = jwtDecode(token);
-const restaurant_id = decoded.restaurant_id;
-const apiBaseUrl = process.env.REACT_APP_API_BASE_URL;
+  let imageUrl = null;
 
+  // 1. If imageFile exists, upload it and get URL
+  if (imageFile) {
+    const imageFormData = new FormData();
+    imageFormData.append('file', imageFile);
+
+    const uploadRes = await fetch(`${apiBaseUrl}/api/upload-wine-image`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` }, // If your upload route is protected
+      body: imageFormData
+    });
+    if (uploadRes.ok) {
+      const { url } = await uploadRes.json();
+      imageUrl = url;
+    } else {
+      alert("Image upload failed");
+      return;
+    }
+  }
+
+  // 2. Submit wine request with image url
   const payload = {
     ...form,
     vintage: parseInt(form.vintage),
-    image_url: null, // no AWS upload for now
+    image_url: imageUrl,
     restaurant_id
   };
 
@@ -57,19 +78,13 @@ const apiBaseUrl = process.env.REACT_APP_API_BASE_URL;
 
   if (response.ok) {
     alert("✅ Wine request submitted!");
-    setForm({
-      wine_name: "", company: "", country: "", region: "",
-      vintage: "", type: "Red", body: "Light", notes: ""
-    });
+    setForm({ wine_name: "", company: "", country: "", region: "", vintage: "", type: "", body: "", notes: "" });
     setImageFile(null);
   } else {
     const error = await response.json();
     alert(`❌ Failed: ${error.error}`);
   }
 };
-
-
-
 
   return (
     <Box sx={{ minHeight: "100vh", display: "flex", flexDirection: "column", backgroundColor: "#fff7f2" }}>

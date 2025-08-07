@@ -401,7 +401,7 @@ const toggleAvailable = async (wineId) => {
     </FormControl>
 
     <TextField
-      label="Price Override (optional)"
+      label="Price"
       type="number"
       value={priceOverride}
       onChange={(e) => setPriceOverride(e.target.value)}

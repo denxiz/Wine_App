@@ -65,20 +65,26 @@ export default function WineRequestReview() {
   };
 
   // Reject (delete from requests)
-  const handleReject = async () => {
-    const token = getToken();
-    try {
-      await fetch(`${apiBaseUrl}/api/admin/wine-requests/${pendingId}/reject`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-      });
+const handleReject = async () => {
+  const token = getToken();
+  try {
+    const res = await fetch(`${apiBaseUrl}/api/admin/wine-requests/${pendingId}/reject`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (res.ok) {
       fetchRequests();
-    } catch (err) {
-      alert("Failed to reject");
+    } else {
+      const error = await res.json();
+      alert("Reject failed: " + (error.error || "Unknown error"));
     }
-    setConfirmAction("");
-    setPendingId(null);
-  };
+  } catch (err) {
+    alert("Failed to reject");
+  }
+  setConfirmAction("");
+  setPendingId(null);
+};
+
 
   // Edit and save request
   const handleEdit = (request) => {
@@ -145,6 +151,7 @@ export default function WineRequestReview() {
               <TableCell>Type</TableCell>
               <TableCell>Body</TableCell>
               <TableCell>Notes</TableCell>
+              <TableCell>Image_Url</TableCell>
               <TableCell>Requested By</TableCell>
               <TableCell align="center">Edit</TableCell>
               <TableCell align="center">Approve</TableCell>
@@ -162,6 +169,20 @@ export default function WineRequestReview() {
                 <TableCell>{req.type}</TableCell>
                 <TableCell>{req.body}</TableCell>
                 <TableCell>{req.notes || "-"}</TableCell>
+                <TableCell>
+                  {req.image_url ? (
+                    <a
+                      href={req.image_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ color: "#1976d2", wordBreak: "break-all" }}
+                    >
+                      {req.image_url}
+                    </a>
+                  ) : (
+                    "-"
+                  )}
+                </TableCell>
                 <TableCell>{req.restaurant_name}</TableCell>
                 <TableCell align="center">
                   <IconButton onClick={() => handleEdit(req)}>
@@ -253,6 +274,15 @@ export default function WineRequestReview() {
                 value={selectedRequest.notes || ""}
                 onChange={(e) =>
                   setSelectedRequest((prev) => ({ ...prev, notes: e.target.value }))
+                }
+              />
+              <TextField
+                label="Image_url"
+                multiline
+                rows={3}
+                value={selectedRequest.image_url || ""}
+                onChange={(e) =>
+                  setSelectedRequest((prev) => ({ ...prev, image_url: e.target.value }))
                 }
               />
               <TextField

@@ -20,7 +20,7 @@ export default function AdminDashboard() {
 useEffect(() => {
   const token = localStorage.getItem("token");
 
-  fetch(`${apiBaseUrl}/admin/wines/count`, {
+  fetch(`${apiBaseUrl}/api/admin/wines/count`, {
     headers: { Authorization: `Bearer ${token}` }
   })
     .then((res) => res.json())

@@ -221,7 +221,7 @@ const handleDeleteConfirm = async () => {
             sx={{ backgroundColor: "#ffccbc", color: "#100412ff" }}
             onClick={() => {
               const base = window.location.origin;
-              const path = "/Wine_App/#/restaurant/requestwineform";
+              const path = "#/restaurant/requestwineform";
               window.location.href = base + path;
             }}
           >
