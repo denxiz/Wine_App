@@ -593,6 +593,14 @@ router.post("/admin/wine-requests/:id/reject", authenticateToken, requireAdmin, 
   res.json({ message: "Wine request rejected and deleted." });
 });
 
+// Count wines
+router.get("/admin/wines/count", authenticateToken, requireAdmin, async (req, res) => {
+  const { count, error } = await db
+    .from("wine")
+    .select("*", { count: "exact", head: true });
+  if (error) return res.status(500).json({ error: error.message });
+  res.json({ count });
+});
 
 // Count restaurants
 router.get("/admin/restaurants/count", authenticateToken, requireAdmin, async (req, res) => {
