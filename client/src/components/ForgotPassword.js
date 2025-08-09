@@ -59,7 +59,7 @@ export default function ForgotPassword() {
           </form>
         )}
 
-        <Button component={RouterLink} to="/login" sx={{ mt:2 }}>
+        <Button component={RouterLink} to="/" sx={{ mt:2 }}>
           Back to login
         </Button>
       </Paper>

@@ -78,7 +78,7 @@ router.post("/logo", authenticateToken, upload.single("file"), async (req, res) 
 
     const buf = await sharp(file.buffer)
       .rotate()
-      .trim(12)
+      .trim({ threshold: 12 })
       .resize({
         width: SIZE,
         height: SIZE,
@@ -389,7 +389,7 @@ router.post("/upload-wine-image", authenticateToken, upload.single("file"), asyn
     // 1) Main image: trim uniform borders, keep EXIF rotation, pad to 3:4 if needed
     const mainBuf = await sharp(file.buffer)
       .rotate()
-      .trim(12) // trims border-like whitespace; tweak 8–20 if needed
+      .trim({ threshold: 12 }) // trims border-like whitespace; tweak 8–20 if needed
       .resize({
         width: TARGET_W,
         height: TARGET_H,
@@ -403,7 +403,7 @@ router.post("/upload-wine-image", authenticateToken, upload.single("file"), asyn
     // 2) Thumbnail (lighter)
     const thumbBuf = await sharp(file.buffer)
       .rotate()
-      .trim(12)
+      .trim({ threshold: 12 })
       .resize({
         width: 400,
         height: 533, // 3:4
