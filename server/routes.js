@@ -4,7 +4,8 @@ const db = require("./db"); // Supabase client
 const bcrypt = require("bcryptjs");
 const multer = require("multer");
 const { S3Client, PutObjectCommand } = require("@aws-sdk/client-s3");
-const upload = multer({ storage: multer.memoryStorage() });
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024, files: 1 } });
+
 const {
   authenticateToken,
   requireRestaurant,
