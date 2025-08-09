@@ -228,6 +228,7 @@ export default function AddRestaurant() {
         <Button variant="text" component={RouterLink} to="/admin/wines/add">
           Add Wine
         </Button>
+        <Button variant="text" component={RouterLink} to="/admin/assign-image">Assign Wine Image</Button>
         <Button variant="text" component={RouterLink} to="/admin/wine-requests">
           Wine Requests
         </Button>

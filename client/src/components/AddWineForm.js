@@ -211,6 +211,7 @@ export default function AddWineForm() {
         <Button variant="text" component={RouterLink} to="/admin/restaurantlist">Restaurants</Button>
         <Button variant="text" component={RouterLink} to="/admin/restaurantlist/add">Add Restaurant</Button>
         <Button variant="text" component={RouterLink} to="/admin/wines/">Wine Database</Button>
+        <Button variant="text" component={RouterLink} to="/admin/assign-image">Assign Wine Image</Button>
         <Button variant="text" component={RouterLink} to="/admin/wine-requests">Wine Requests</Button>
         <Button variant="text" component={RouterLink} to="/user-view">User View</Button>
       </Box>

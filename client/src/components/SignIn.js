@@ -11,6 +11,8 @@ import {
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
+import { Link as RouterLink } from "react-router-dom";
+
 
 export default function SignIn() {
   const [email, setEmail] = useState("");
@@ -122,10 +124,16 @@ if (res.ok && data.token) {
               </Typography>
             )}
             <Box sx={{ textAlign: "right", mt: 1 }}>
-              <Link href="#" underline="hover" fontSize="0.9rem">
-                Forgot Password
-              </Link>
-            </Box>
+  <Button
+    component={RouterLink}
+    to="/forgot-password"
+    size="small"
+    variant="text"
+    sx={{ textTransform: "none", p: 0, minWidth: 0 }}
+  >
+    Forgot Password
+  </Button>
+</Box>
             <Button
               type="submit"
               variant="contained"

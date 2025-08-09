@@ -13,6 +13,47 @@ const {
 const { DeleteObjectCommand } = require("@aws-sdk/client-s3");
 const sharp = require("sharp");
 const BASE_URL = `https://${process.env.S3_BUCKET}.s3.${process.env.AWS_REGION}.amazonaws.com`;
+const crypto = require("crypto");
+const APP_URL = process.env.APP_URL || "https://http://my-wine-app-frontend.s3-website.us-east-2.amazonaws.com/#";
+
+
+
+const { SESv2Client, SendEmailCommand } = require("@aws-sdk/client-sesv2");
+const ses = new SESv2Client({ region: process.env.SES_REGION || process.env.AWS_REGION });
+
+async function sendResetEmail(to, link) {
+  const from = process.env.SES_FROM;
+  const replyTo = process.env.SES_REPLY_TO || from;
+
+  const params = {
+    FromEmailAddress: from,
+    Destination: { ToAddresses: [to] },
+    ReplyToAddresses: [replyTo],
+    Content: {
+      Simple: {
+        Subject: { Data: "Reset your Wine App password" },
+        Body: {
+          Text: { Data:
+`We received a request to reset your Wine App password.
+
+Reset link (valid for 60 minutes):
+${link}
+
+If you did not request this, you can ignore this email.` },
+          Html: { Data:
+`<div style="font-family:system-ui,Segoe UI,Roboto,Arial,sans-serif;line-height:1.5">
+  <p>We received a request to reset your Wine App password.</p>
+  <p><a href="${link}" style="display:inline-block;padding:10px 16px;border-radius:8px;background:#0b5cff;color:#fff;text-decoration:none">Reset password</a></p>
+  <p>This link is valid for <strong>60 minutes</strong>. If you did not request this, you can ignore this email.</p>
+  <p style="color:#666">If the button doesn’t work, copy this URL:<br><a href="${link}">${link}</a></p>
+</div>` }
+        }
+      }
+    }
+  };
+
+  await ses.send(new SendEmailCommand(params));
+}
 
 
 
@@ -797,6 +838,93 @@ router.get("/admin/wine-requests/count", authenticateToken, requireAdmin, async 
   res.json({ count });
 });
 
+// POST /api/auth/forgot-password  (no auth)
+router.post("/auth/forgot-password", async (req, res) => {
+  const { email } = req.body || {};
+  const generic = { message: "If an account exists, a reset link has been sent." };
+
+  try {
+    if (!email) return res.json(generic);
+
+    // restaurant users only
+    const { data: user, error } = await db
+      .from("restaurant")
+      .select("id, email")
+      .eq("email", String(email).toLowerCase())
+      .single();
+
+    // Always return generic to avoid user enumeration
+    if (error || !user) return res.json(generic);
+
+    // create token (raw) + store hash with 60 min expiry
+    const rawToken  = crypto.randomBytes(32).toString("hex");
+    const tokenHash = crypto.createHash("sha256").update(rawToken).digest("hex");
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+
+    await db.from("password_resets").insert([{
+      user_id: user.id,
+      email: user.email,
+      token_hash: tokenHash,
+      expires_at: expiresAt,
+    }]);
+
+    const resetUrl = `${APP_URL}/reset-password?token=${rawToken}`;
+    
+    // send via SES (don’t block the generic response if send fails)
+    try { await sendResetEmail(user.email, resetUrl); }
+    catch (e) { console.error("SES send error:", e); }
+
+    return res.json(generic);
+  } catch (e) {
+    console.error("forgot-password error:", e);
+    return res.json(generic);
+  }
+});
+
+
+router.post("/auth/reset-password", async (req, res) => {
+  const { token, password } = req.body || {};
+  if (!token || !password) return res.status(400).json({ error: "Missing token or password" });
+
+  try {
+    const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
+    const nowIso = new Date().toISOString();
+
+    // Find a valid, unused token
+    const { data: rows, error: qErr } = await db
+      .from("password_resets")
+      .select("id, user_id, expires_at, used")
+      .eq("token_hash", tokenHash)
+      .order("created_at", { ascending: false })
+      .limit(1);
+
+    if (qErr || !rows || rows.length === 0) {
+      return res.status(400).json({ error: "Invalid or expired token" });
+    }
+    const reset = rows[0];
+    if (reset.used || new Date(reset.expires_at) < new Date()) {
+      return res.status(400).json({ error: "Invalid or expired token" });
+    }
+
+    // Update password
+    const hashed = await bcrypt.hash(password, 10);
+    const { error: upErr } = await db
+      .from("restaurant")
+      .update({ password: hashed })
+      .eq("id", reset.user_id);
+    if (upErr) return res.status(500).json({ error: upErr.message });
+
+    // Invalidate this token (and optionally other tokens for the same user)
+    await db.from("password_resets").update({ used: true }).eq("id", reset.id);
+    // Optional: clean any other unused tokens for that user
+    await db.from("password_resets").update({ used: true }).eq("user_id", reset.user_id).neq("id", reset.id);
+
+    return res.json({ message: "Password has been reset." });
+  } catch (err) {
+    console.error("reset-password error:", err);
+    return res.status(500).json({ error: "Reset failed" });
+  }
+});
 
 
 module.exports = router;

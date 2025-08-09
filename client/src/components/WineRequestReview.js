@@ -136,6 +136,7 @@ const handleReject = async () => {
         <Button variant="text" component={RouterLink} to="/admin/restaurantlist/add">Add Restaurant</Button>
         <Button variant="text" component={RouterLink} to="/admin/wines/">Wine Database</Button>
         <Button variant="text" component={RouterLink} to="/admin/wines/add">Add Wine</Button>
+        <Button variant="text" component={RouterLink} to="/admin/assign-image">Assign Wine Image</Button>
         <Button variant="text" component={RouterLink} to="/user-view">User View</Button>
       </Box>
 

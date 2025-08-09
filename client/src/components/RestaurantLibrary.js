@@ -228,7 +228,7 @@ const handleAssignWine = async () => {
 
 const wineOptions = (availableWines || []).map(w => ({
   ...w,
-  label: `${w.wine_name} (${w.vintage ?? "NV"}) — ${w.region}, ${w.country}`,
+  label: `${w.wine_name} (${w.vintage ?? "NV"}) — ${w.company}, ${w.region}, ${w.country}`,
 }));
 
 
