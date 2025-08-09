@@ -3,7 +3,6 @@ const router = express.Router();
 const db = require("./db"); // Supabase client
 const bcrypt = require("bcryptjs");
 const multer = require("multer");
-const { Upload } = require("@aws-sdk/lib-storage");
 const { S3Client, PutObjectCommand } = require("@aws-sdk/client-s3");
 const upload = multer({ storage: multer.memoryStorage() });
 const {
@@ -12,6 +11,8 @@ const {
   requireAdmin
 } = require("./middleware/authMiddleware");
 const { DeleteObjectCommand } = require("@aws-sdk/client-s3");
+const sharp = require("sharp");
+const BASE_URL = `https://${process.env.S3_BUCKET}.s3.${process.env.AWS_REGION}.amazonaws.com`;
 
 
 
@@ -23,29 +24,51 @@ const s3 = new S3Client({
   },
 });
 
-router.post("/logo", upload.single("file"), async (req, res) => {
+// Normalize logos to a square (trim borders + 512x512)
+router.post("/logo", authenticateToken, upload.single("file"), async (req, res) => {
   try {
     const file = req.file;
     if (!file) return res.status(400).json({ error: "No file uploaded" });
+    if (!/^image\/(jpe?g|png|webp|gif)$/i.test(file.mimetype)) {
+      return res.status(400).json({ error: "Unsupported file type" });
+    }
 
-    const fileName = `${Date.now()}-${file.originalname.replace(/\s+/g, "_")}`;
+    const SIZE = 512;
 
-    const command = new PutObjectCommand({
+    const buf = await sharp(file.buffer)
+      .rotate()
+      .trim(12)
+      .resize({
+        width: SIZE,
+        height: SIZE,
+        fit: "contain", // keep ratio; pad to square
+        background: { r: 255, g: 255, b: 255, alpha: 0 },
+        withoutEnlargement: true,
+      })
+      .webp({ quality: 90 })
+      .toBuffer();
+
+    const safeBase = (file.originalname || "logo")
+      .replace(/\s+/g, "_")
+      .replace(/[^\w.\-]/g, "")
+      .replace(/\.(jpe?g|png|webp|gif)$/i, "");
+    const key = `logos/${Date.now()}-${safeBase}.webp`;
+
+    await s3.send(new PutObjectCommand({
       Bucket: process.env.S3_BUCKET,
-      Key: fileName,
-      Body: file.buffer,
-      ContentType: file.mimetype,
-    });
+      Key: key,
+      Body: buf,
+      ContentType: "image/webp",
+      ACL: "public-read",
+    }));
 
-    await s3.send(command);
-
-    const url = `https://${process.env.S3_BUCKET}.s3.${process.env.AWS_REGION}.amazonaws.com/${fileName}`;
-    res.json({ url });
+    res.json({ url: `${BASE_URL}/${key}`, width: SIZE, height: SIZE, format: "webp" });
   } catch (err) {
     console.error("S3 upload error:", err);
     res.status(500).json({ error: "Upload failed" });
   }
 });
+
 
 
 // ✅ GET all restaurants
@@ -61,21 +84,71 @@ router.get("/restaurants", authenticateToken, requireAdmin, async (req, res) => 
 
 
 // ✅ DELETE restaurant
+// ✅ DELETE restaurant (also delete its logo from S3 if present)
 router.delete("/restaurants/:id", authenticateToken, requireAdmin, async (req, res) => {
   const { id } = req.params;
 
-  const { error } = await db
-    .from("restaurant")
-    .delete()
-    .eq("id", id);
+  try {
+    // 1) Get logo_url first
+    const { data: rest, error: fetchErr } = await db
+      .from("restaurant")
+      .select("logo_url")
+      .eq("id", id)
+      .single();
 
-  if (error) {
-    console.error("Delete error:", error);
-    return res.status(500).json({ error: error.message });
+    if (fetchErr || !rest) {
+      return res.status(404).json({ error: fetchErr?.message || "Restaurant not found" });
+    }
+
+    // 2) If we have a logo URL, delete it from S3 first
+    if (rest.logo_url) {
+      // Try to extract the S3 key from a typical AWS URL
+      let key = rest.logo_url.split(".amazonaws.com/")[1];
+
+      // Fallback: split by '/' if format is unexpected
+      if (!key) {
+        const parts = rest.logo_url.split("/");
+        // after https:, '', bucket-host, possible region path...
+        key = parts.slice(4).join("/");
+      }
+
+      if (!key) {
+        console.warn("No valid S3 key extracted for logo deletion:", rest.logo_url);
+        return res.status(500).json({ error: "Could not determine S3 key for logo deletion." });
+      }
+
+      try {
+        await s3.send(
+          new DeleteObjectCommand({
+            Bucket: process.env.S3_BUCKET,
+            Key: key,
+          })
+        );
+        console.log("[S3 DELETE] Restaurant logo deleted:", key);
+      } catch (err) {
+        console.error("[S3 DELETE ERROR] Failed to delete restaurant logo:", err);
+        return res.status(500).json({ error: "Logo could not be deleted from AWS. Restaurant not deleted." });
+      }
+    }
+
+    // 3) Now delete the restaurant row
+    const { error: delErr } = await db
+      .from("restaurant")
+      .delete()
+      .eq("id", id);
+
+    if (delErr) {
+      console.error("Delete restaurant error:", delErr);
+      return res.status(500).json({ error: delErr.message });
+    }
+
+    res.json({ message: "Restaurant and its logo deleted successfully" });
+  } catch (err) {
+    console.error("Unexpected delete error:", err);
+    res.status(500).json({ error: "Internal server error" });
   }
-
-  res.json({ message: "Restaurant deleted successfully" });
 });
+
 
 // ✅ UPDATE restaurant info
 router.put("/restaurants/:id", authenticateToken, requireAdmin, async (req, res) => {
@@ -227,17 +300,22 @@ router.delete("/wines/:id", authenticateToken, requireAdmin, async (req, res) =>
     }
 
     try {
-      await s3.send(
-        new DeleteObjectCommand({
-          Bucket: process.env.S3_BUCKET,
-          Key: key,
-        })
-      );
-      console.log("[S3 DELETE] S3 delete success for key:", key);
-    } catch (err) {
-      console.error("[S3 DELETE ERROR] Failed to delete S3 image:", err);
-      return res.status(500).json({ error: "Image could not be deleted from AWS. Wine not deleted." });
-    }
+  await s3.send(new DeleteObjectCommand({
+    Bucket: process.env.S3_BUCKET,
+    Key: key,
+  }));
+
+  // also try to remove the thumbnail (if our new scheme is in use)
+  const thumbKey = key.replace(/\.webp$/, "-thumb.webp");
+  await s3.send(new DeleteObjectCommand({
+    Bucket: process.env.S3_BUCKET,
+    Key: thumbKey,
+  }));
+  console.log("[S3 DELETE] Deleted main and thumb:", key, thumbKey);
+} catch (err) {
+  console.error("[S3 DELETE ERROR] Failed to delete S3 image(s):", err);
+  return res.status(500).json({ error: "Image could not be deleted from AWS. Wine not deleted." });
+}
   }
 
   // 3. Now, delete the wine from the DB
@@ -254,29 +332,83 @@ router.delete("/wines/:id", authenticateToken, requireAdmin, async (req, res) =>
 });
 
 
-router.post("/upload-wine-image", upload.single("file"), async (req, res) => {
+// Normalize wine images (trim borders + 3:4 box) and create a thumbnail
+router.post("/upload-wine-image", authenticateToken, upload.single("file"), async (req, res) => {
   try {
     const file = req.file;
     if (!file) return res.status(400).json({ error: "No file uploaded" });
+    if (!/^image\/(jpe?g|png|webp|gif)$/i.test(file.mimetype)) {
+      return res.status(400).json({ error: "Unsupported file type" });
+    }
 
-    const fileName = `${Date.now()}-${file.originalname.replace(/\s+/g, "_")}`;
+    // Consistent portrait frame for labels (no stretching)
+    const TARGET_W = 800;
+    const TARGET_H = 1067; // 3:4
 
-    const command = new PutObjectCommand({
+    // 1) Main image: trim uniform borders, keep EXIF rotation, pad to 3:4 if needed
+    const mainBuf = await sharp(file.buffer)
+      .rotate()
+      .trim(12) // trims border-like whitespace; tweak 8–20 if needed
+      .resize({
+        width: TARGET_W,
+        height: TARGET_H,
+        fit: "contain", // preserves aspect ratio
+        background: { r: 255, g: 255, b: 255, alpha: 0 },
+        withoutEnlargement: true,
+      })
+      .webp({ quality: 82 })
+      .toBuffer();
+
+    // 2) Thumbnail (lighter)
+    const thumbBuf = await sharp(file.buffer)
+      .rotate()
+      .trim(12)
+      .resize({
+        width: 400,
+        height: 533, // 3:4
+        fit: "contain",
+        background: { r: 255, g: 255, b: 255, alpha: 0 },
+        withoutEnlargement: true,
+      })
+      .webp({ quality: 80 })
+      .toBuffer();
+
+    // 3) Upload both to S3 (as webp)
+    const safeBase = (file.originalname || "wine")
+      .replace(/\s+/g, "_")
+      .replace(/[^\w.\-]/g, "")
+      .replace(/\.(jpe?g|png|webp|gif)$/i, "");
+    const keyBase = `wines/${Date.now()}-${safeBase}`;
+
+    await s3.send(new PutObjectCommand({
       Bucket: process.env.S3_BUCKET,
-      Key: fileName,
-      Body: file.buffer,
-      ContentType: file.mimetype,
+      Key: `${keyBase}.webp`,
+      Body: mainBuf,
+      ContentType: "image/webp",
+      ACL: "public-read",
+    }));
+
+    await s3.send(new PutObjectCommand({
+      Bucket: process.env.S3_BUCKET,
+      Key: `${keyBase}-thumb.webp`,
+      Body: thumbBuf,
+      ContentType: "image/webp",
+      ACL: "public-read",
+    }));
+
+    res.json({
+      url:       `${BASE_URL}/${keyBase}.webp`,
+      thumb_url: `${BASE_URL}/${keyBase}-thumb.webp`,
+      width: TARGET_W,
+      height: TARGET_H,
+      format: "webp",
     });
-
-    await s3.send(command);
-
-    const url = `https://${process.env.S3_BUCKET}.s3.${process.env.AWS_REGION}.amazonaws.com/${fileName}`;
-    res.json({ url });
   } catch (err) {
     console.error("S3 upload error:", err);
     res.status(500).json({ error: "Upload failed" });
   }
 });
+
 //rest library
 // ✅ Get single restaurant info (for logo etc.)
 router.get("/restaurant/:id", authenticateToken, requireRestaurant, async (req, res) => {

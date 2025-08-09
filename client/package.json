@@ -16,7 +16,7 @@
     "react-scripts": "^5.0.1"
   },
   "scripts": {
-    "predeploy": "npm run build",
+    "predeploy": "",
     "deploy":"npm run build && aws s3 sync build/ s3://my-wine-app-frontend/ --delete",
     "start": "react-scripts start",
     "build": "react-scripts build",

@@ -138,7 +138,7 @@ export default function RestaurantList() {
       <Grid container spacing={2} sx={{ p: 2 }}>
         <Grid item xs={12} sm={4} md={3}>
           <TextField
-            label="Search by Name"
+            label="Search by Restaurant Name"
             fullWidth
             value={searchName}
             onChange={e => setSearchName(e.target.value)}
@@ -173,11 +173,11 @@ export default function RestaurantList() {
         <Table>
           <TableHead>
             <TableRow sx={{ backgroundColor: "#ffffff" }}>
-              <TableCell>Name</TableCell>
-              <TableCell>Email</TableCell>
+              <TableCell>Restaurant Name</TableCell>
+              <TableCell>Restaurant Email</TableCell>
+              <TableCell>Restaurant Address</TableCell>
               <TableCell>Contact_Name</TableCell>
               <TableCell>Contact_Email</TableCell>
-              <TableCell>Address</TableCell>
               <TableCell># of Wines</TableCell>
               <TableCell>Membership</TableCell>
               <TableCell>Actions</TableCell>
@@ -201,9 +201,9 @@ export default function RestaurantList() {
               >
                 <TableCell>{r.name}</TableCell>
                 <TableCell>{r.email}</TableCell>
+                <TableCell>{r.address || "-"}</TableCell>
                 <TableCell>{r.contact_name}</TableCell>
                 <TableCell>{r.contact_email}</TableCell>
-                <TableCell>{r.address || "-"}</TableCell>
                 <TableCell>{r.restaurant_wines?.[0]?.count || 0}</TableCell>
                 <TableCell>
                   <Box
@@ -256,14 +256,20 @@ export default function RestaurantList() {
         <DialogTitle>Edit Restaurant</DialogTitle>
         <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 1 }}>
           <TextField
-            label="Name"
+            label="Restaurant Name"
+            variant="outlined"
             value={selectedRestaurant?.name || ""}
             onChange={e => setSelectedRestaurant((prev) => ({ ...prev, name: e.target.value }))}
           />
           <TextField
-            label="Email"
+            label="Restaurant Email"
             value={selectedRestaurant?.email || ""}
             onChange={e => setSelectedRestaurant((prev) => ({ ...prev, email: e.target.value }))}
+          />
+          <TextField
+            label="Restaurant Address"
+            value={selectedRestaurant?.address || ""}
+            onChange={e => setSelectedRestaurant((prev) => ({ ...prev, address: e.target.value }))}
           />
           <TextField
             label="Contact_Name"
@@ -274,11 +280,6 @@ export default function RestaurantList() {
             label="Contact_Email"
             value={selectedRestaurant?.contact_email || ""}
             onChange={e => setSelectedRestaurant((prev) => ({ ...prev, contact_email: e.target.value }))}
-          />
-          <TextField
-            label="Address"
-            value={selectedRestaurant?.address || ""}
-            onChange={e => setSelectedRestaurant((prev) => ({ ...prev, address: e.target.value }))}
           />
         </DialogContent>
         <DialogActions>

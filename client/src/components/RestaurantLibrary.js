@@ -7,6 +7,8 @@ import {
   IconButton, TextField, FormControl,InputLabel, Select, MenuItem, Switch,
 } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
+import Autocomplete from "@mui/material/Autocomplete";
+
 
 export default function RestaurantLibrary() {
   const { id } = useParams();
@@ -24,6 +26,8 @@ export default function RestaurantLibrary() {
   const [searchYear, setSearchYear] = useState("");
   const [statusFilter, setStatusFilter] = useState("all"); // "all", "active", "inactive"
   const apiBaseUrl = process.env.REACT_APP_API_BASE_URL;
+const [assignSearch, setAssignSearch] = useState("");
+const [priceError, setPriceError] = useState("");
 
 
   useEffect(() => {
@@ -177,12 +181,22 @@ const toggleAvailable = async (wineId) => {
 
 
 
-  const handleAssignWine = async () => {
+const handleAssignWine = async () => {
+  // 1) Must pick a wine
   if (!selectedWineId) {
     alert("Select a wine first");
     return;
   }
 
+  // 2) Price is required and must be > 0
+  const priceNum = Number(priceOverride);
+  if (!Number.isFinite(priceNum) || priceNum <= 0) {
+    setPriceError("Please enter a valid price > 0");
+    return;
+  }
+  setPriceError("");
+
+  // 3) Submit
   try {
     const res = await fetch(`${apiBaseUrl}/api/restaurant/${id}/assign-wine`, {
       method: "POST",
@@ -192,12 +206,12 @@ const toggleAvailable = async (wineId) => {
       },
       body: JSON.stringify({
         wine_id: selectedWineId,
-        price_override: priceOverride || null,
+        price_override: priceNum, // send numeric, not string/null
       }),
     });
 
     if (!res.ok) {
-      const result = await res.json();
+      const result = await res.json().catch(() => ({}));
       alert("Error assigning wine: " + (result.error || "Unknown error"));
       return;
     }
@@ -211,6 +225,12 @@ const toggleAvailable = async (wineId) => {
     alert("Failed to assign wine.");
   }
 };
+
+const wineOptions = (availableWines || []).map(w => ({
+  ...w,
+  label: `${w.wine_name} (${w.vintage ?? "NV"}) — ${w.region}, ${w.country}`,
+}));
+
 
 
   return (
@@ -382,37 +402,85 @@ const toggleAvailable = async (wineId) => {
 
       {/* Assign Dialog */}
 
-<Dialog open={openAssign} onClose={() => setOpenAssign(false)} maxWidth="md" fullWidth>
+<Dialog open={openAssign} onClose={() => setOpenAssign(false)} maxWidth="lg" fullWidth
+PaperProps={{
+    sx: {
+      width: 960,                      // ~960px wide
+      maxWidth: '90vw',               // responsive
+      maxHeight: '85vh',              // taller
+      borderRadius: 2
+    }
+  }}>
   <DialogTitle>Assign Wine to {restaurantName}</DialogTitle>
-  <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-    <FormControl fullWidth>
-      <InputLabel>Select a Wine</InputLabel>
-      <Select
-        value={selectedWineId}
-        onChange={(e) => setSelectedWineId(e.target.value)}
-        label="Select a Wine"
-      >
-        {availableWines.map((wine) => (
-          <MenuItem key={wine.id} value={wine.id}>
-            {wine.wine_name} ({wine.vintage}) — {wine.region}, {wine.country}
-          </MenuItem>
-        ))}
-      </Select>
-    </FormControl>
+  <DialogContent sx={{ display: 'grid', gap: 2, py: 2 }}>
+    <Autocomplete
+  fullWidth
+  options={wineOptions}
+  // shows combined "Name (Year) — Region, Country"
+  getOptionLabel={(opt) => opt?.label ?? ""}
+  // keep equality stable by id
+  isOptionEqualToValue={(opt, val) => opt.id === val.id}
+  // control the currently picked option by id
+  value={wineOptions.find(o => o.id === selectedWineId) || null}
+  onChange={(_, val) => setSelectedWineId(val?.id ?? null)}
+  // control the text the user is typing
+  inputValue={assignSearch}
+  onInputChange={(_, val) => setAssignSearch(val)}
+  // type "name, year" to filter both
+  filterOptions={(options, { inputValue }) => {
+    const raw = inputValue.trim().toLowerCase();
+
+    // if they typed "name, year"
+    const [namePartRaw, yearPartRaw] = raw.split(",").map(s => s?.trim());
+    const wantsYear = !!yearPartRaw && /^\d{2,4}$/.test(yearPartRaw);
+
+    return options.filter(opt => {
+      const nameHit = namePartRaw
+        ? (opt.wine_name || "").toLowerCase().includes(namePartRaw)
+        : (opt.label || "").toLowerCase().includes(raw);
+
+      if (!nameHit) return false;
+
+      if (wantsYear) {
+        // accept 2 or 4 digit entry; compare to vintage end
+        const vint = String(opt.vintage ?? "");
+        if (!vint) return false;
+        return vint.endsWith(yearPartRaw);
+      }
+      return true;
+    });
+  }}
+  renderInput={(params) => (
+    <TextField
+      {...params}
+      label={`Select a Wine (type "name" or "name, year")`}
+      placeholder={`e.g., "Margaux, 2015"`}
+      InputLabelProps={{ ...params.InputLabelProps}}
+    />
+  )}
+/>
+
 
     <TextField
-      label="Price"
-      type="number"
-      value={priceOverride}
-      onChange={(e) => setPriceOverride(e.target.value)}
-      fullWidth
-    />
+  label="Price (required)"
+  type="number"
+  value={priceOverride}
+  onChange={(e) => { setPriceOverride(e.target.value); if (priceError) setPriceError(""); }}
+  inputProps={{ min: 0, step: "0.01" }}
+  required
+  error={!!priceError}
+  helperText={priceError}
+/>
   </DialogContent>
 
   <DialogActions>
     <Button onClick={() => setOpenAssign(false)}>Cancel</Button>
-    <Button onClick={handleAssignWine} variant="contained">
-  Assign Wine
+    <Button
+  onClick={handleAssignWine}
+  variant="contained"
+  disabled={!selectedWineId || !priceOverride || Number(priceOverride) <= 0}
+>
+  ASSIGN WINE
 </Button>
 
 

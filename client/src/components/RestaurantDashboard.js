@@ -26,6 +26,12 @@ export default function RestaurantDashboard() {
   const [price, setPrice] = useState("");
   const [confirmText, setConfirmText] = useState("");
   const [restaurantLogo, setRestaurantLogo] = useState("");
+  const [searchName, setSearchName] = useState("");
+  const [searchCompany, setSearchCompany] = useState("");
+  const [searchRegion, setSearchRegion] = useState("");
+  const [searchYear, setSearchYear] = useState("");
+  const [searchCountry, setSearchCountry] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
   const apiBaseUrl = process.env.REACT_APP_API_BASE_URL;
 
   useEffect(() => {
@@ -73,11 +79,15 @@ export default function RestaurantDashboard() {
 
   useEffect(() => {
     const filtered = allWines.filter((entry) =>
-      normalizeText(entry.region).includes(normalizeText(region)) &&
-      normalizeText(entry.wine_name).includes(normalizeText(wineName))
+    (searchName === "" || normalizeText(entry.wine_name).startsWith(normalizeText(searchName))) &&
+  (searchCompany === "" || entry.company.toLowerCase().startsWith(searchCompany.toLowerCase())) &&
+  (searchRegion === "" || entry.region.toLowerCase().startsWith(searchRegion.toLowerCase())) &&
+  (searchCountry === "" || (entry.country || "").toLowerCase().startsWith(searchCountry.toLowerCase())) &&
+  (searchYear === "" || String(entry.vintage).startsWith(searchYear)) &&
+  (statusFilter === "all" || (statusFilter === "in" && entry.available === true) ||(statusFilter === "out" && entry.available === false))
     );
     setWines(filtered);
-  }, [region, wineName, allWines]);
+  }, [searchCompany, searchCountry, searchName, searchRegion, searchYear, statusFilter, allWines]);
 
   const normalizeText = (str) =>
     str?.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "") || "";
@@ -211,7 +221,7 @@ const handleDeleteConfirm = async () => {
     }}
   />
 ) : (
-  <Typography sx={{ marginLeft: 2 }}>No Logo</Typography>
+  <Typography sx={{ marginLeft: 2 }}>Loading...</Typography>
 )}
 
         </Box>
@@ -237,23 +247,63 @@ const handleDeleteConfirm = async () => {
       </Box>
 
       <Box sx={{ p: 2 }}>
-        <Grid container spacing={2}>
-          <Grid item xs={12} sm={6}>
+        <Grid container spacing={2} sx={{ mb: 2 }}>
+          <Grid item xs={12} sm={6} md={3}>
+            <TextField
+              label="Search by Name"
+              fullWidth
+              value={searchName}
+              onChange={(e) => setSearchName(e.target.value)}
+            />
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <TextField
+              label="Search by Company"
+              fullWidth
+              value={searchCompany}
+              onChange={(e) => setSearchCompany(e.target.value)}
+            />
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+          <TextField
+            label="Search by Country"
+            fullWidth
+            value={searchCountry}
+            onChange={(e) => setSearchCountry(e.target.value)}
+          />
+        </Grid>
+          <Grid item xs={12} sm={6} md={3}>
             <TextField
               label="Search by Region"
               fullWidth
-              value={region}
-              onChange={(e) => setRegion(e.target.value)}
+              value={searchRegion}
+              onChange={(e) => setSearchRegion(e.target.value)}
             />
           </Grid>
-          <Grid item xs={12} sm={6}>
+          <Grid item xs={12} sm={6} md={3}>
             <TextField
-              label="Search Wine"
+              label="Search by Year"
+              type="number"
               fullWidth
-              value={wineName}
-              onChange={(e) => setWineName(e.target.value)}
+              value={searchYear}
+              onChange={(e) => setSearchYear(e.target.value)}
             />
           </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+  <TextField
+    select
+    label="Stock Status"
+    fullWidth
+    value={statusFilter}
+    onChange={e => setStatusFilter(e.target.value)}
+    SelectProps={{ native: true }}
+  >
+    <option value="all">All</option>
+    <option value="in">In Stock</option>
+    <option value="out">Out of Stock</option>
+  </TextField>
+</Grid>
+
         </Grid>
       </Box>
 
