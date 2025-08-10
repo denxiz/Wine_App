@@ -15,7 +15,7 @@ const { DeleteObjectCommand } = require("@aws-sdk/client-s3");
 const sharp = require("sharp");
 const BASE_URL = `https://${process.env.S3_BUCKET}.s3.${process.env.AWS_REGION}.amazonaws.com`;
 const crypto = require("crypto");
-const APP_URL = process.env.APP_URL || "https://http://my-wine-app-frontend.s3-website.us-east-2.amazonaws.com/#";
+const APP_URL = process.env.APP_URL || "https://http://my-wine-app-frontend.s3-website.us-east-2.amazonaws.com/";
 
 
 
@@ -117,7 +117,7 @@ router.post("/logo", authenticateToken, upload.single("file"), async (req, res) 
 router.get("/restaurants", authenticateToken, requireAdmin, async (req, res) => {
   const { data, error } = await db
     .from("restaurant")
-    .select("id, name, email, contact_name, contact_email, address, member_status, restaurant_wines(count)");
+    .select("id, name, email, contact_name, contact_email, address, member_status, logo_url, restaurant_wines(count)");
 
   if (error) return res.status(500).json({ error: error.message });
   res.json(data);
@@ -869,7 +869,7 @@ router.post("/auth/forgot-password", async (req, res) => {
       expires_at: expiresAt,
     }]);
 
-    const resetUrl = `${APP_URL}/reset-password?token=${rawToken}`;
+    const resetUrl = `${APP_URL}/#/reset-password?token=${rawToken}`;
     
     // send via SES (don’t block the generic response if send fails)
     try { await sendResetEmail(user.email, resetUrl); }

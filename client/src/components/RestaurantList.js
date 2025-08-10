@@ -207,7 +207,8 @@ export default function RestaurantList() {
                 <TableCell>{r.contact_name}</TableCell>
                 <TableCell>{r.contact_email}</TableCell>
                 <TableCell> {r.logo_url ? (<a href={r.logo_url}
-                      target="_blank" rel="noopener noreferrer" style={{ color: "#1976d2", wordBreak: "break-all" }}>
+                      target="_blank" rel="noopener noreferrer" 
+                      onClick={(e) => e.stopPropagation()} style={{ color: "#1976d2", wordBreak: "break-all" }}>
                       {r.logo_url} </a>) : ("-")}</TableCell>
                 
                 <TableCell>{r.restaurant_wines?.[0]?.count || 0}</TableCell>
@@ -287,6 +288,11 @@ export default function RestaurantList() {
             value={selectedRestaurant?.contact_email || ""}
             onChange={e => setSelectedRestaurant((prev) => ({ ...prev, contact_email: e.target.value }))}
           />
+          <TextField
+            label="Logo_Url"
+            value={selectedRestaurant?.logo_url || ""}
+            onChange={e => setSelectedRestaurant((prev) => ({ ...prev, logo_url: e.target.value }))}
+          />
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setOpenEdit(false)}>Cancel</Button>
@@ -306,7 +312,8 @@ export default function RestaurantList() {
                     contact_name: selectedRestaurant.contact_name,
                     contact_email: selectedRestaurant.contact_email,
                     address: selectedRestaurant.address,
-                    member_status: selectedRestaurant.member_status
+                    member_status: selectedRestaurant.member_status,
+                    logo_url: selectedRestaurant.logo_url
                   }),
                 });
 
