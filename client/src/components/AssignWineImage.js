@@ -171,19 +171,29 @@ export default function AssignWineImage() {
         <Typography variant="h6" sx={{ mb: 2 }}>Assign Image to Wine</Typography>
         <Paper sx={{ p: 3 }}>
           <form onSubmit={handleSubmit}>
-            <Box sx={{ display: "flex", gap: 2, alignItems: "center", flexWrap: "wrap" }}>
+            <Box sx={{ display: "flex", gap: 2, alignItems: { xs: "stretch", sm: "center" },
+    flexWrap: "wrap",flexDirection: { xs: "column", sm: "row" }}}>
               <Autocomplete
-                options={options}
-                getOptionLabel={getOptionLabel}
-                value={selectedWine}
-                onChange={handleSelect}
-                loading={loading}
-                loadingText="Loading wines…"
-                sx={{ minWidth: 420, flex: "1 1 420px" }}
-                renderInput={(params) => (
-                  <TextField {...params} label="Select wine" placeholder="Search by name, region, vintage…" />
-                )}
-              />
+  options={options}
+  getOptionLabel={getOptionLabel}
+  value={selectedWine}
+  onChange={handleSelect}
+  loading={loading}
+  loadingText="Loading wines…"
+  size="small"
+  disablePortal
+  sx={{width: "100%",minWidth: 0, flex: "1 1 100%", maxWidth: { xs: "100%", sm: 520 },}}
+  ListboxProps={{ sx: {"& .MuiAutocomplete-option": {whiteSpace: "normal", wordBreak: "break-word",},},}}
+  renderInput={(params) => (
+    <TextField
+      {...params}
+      fullWidth
+      label="Select wine"
+      placeholder="Search by name, region, vintage…"
+    />
+  )}
+/>
+
 
               <FormControlLabel
                 control={<Switch checked={onlyNoImage} onChange={(e) => setOnlyNoImage(e.target.checked)} />}

@@ -160,7 +160,7 @@ export default function RestaurantList() {
               value={statusFilter}
               label="Status"
               onChange={e => setStatusFilter(e.target.value)}
-              sx={{ backgroundColor: "#fff" }}
+              sx={{ backgroundColor: "" }}
             >
               <MenuItem value="all">All</MenuItem>
               <MenuItem value="active">Active</MenuItem>
@@ -179,6 +179,7 @@ export default function RestaurantList() {
               <TableCell>Restaurant Address</TableCell>
               <TableCell>Contact_Name</TableCell>
               <TableCell>Contact_Email</TableCell>
+              <TableCell>logo_url</TableCell>
               <TableCell># of Wines</TableCell>
               <TableCell>Membership</TableCell>
               <TableCell>Actions</TableCell>
@@ -205,6 +206,10 @@ export default function RestaurantList() {
                 <TableCell>{r.address || "-"}</TableCell>
                 <TableCell>{r.contact_name}</TableCell>
                 <TableCell>{r.contact_email}</TableCell>
+                <TableCell> {r.logo_url ? (<a href={r.logo_url}
+                      target="_blank" rel="noopener noreferrer" style={{ color: "#1976d2", wordBreak: "break-all" }}>
+                      {r.logo_url} </a>) : ("-")}</TableCell>
+                
                 <TableCell>{r.restaurant_wines?.[0]?.count || 0}</TableCell>
                 <TableCell>
                   <Box

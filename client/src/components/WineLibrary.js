@@ -228,22 +228,14 @@ const confirmDelete = async () => {
                   <TableCell>{wine.region}</TableCell>
                   <TableCell>{wine.type}</TableCell>
                   <TableCell>{wine.vintage}</TableCell>
-                  <TableCell sx={{ whiteSpace: "pre-line", wordBreak: "break-word", maxWidth: 350 }}>
+                  <TableCell sx={{     whiteSpace: "pre-line",   // respect \n
+    wordBreak: "keep-all",    // or "normal" — don’t break inside words
+    overflowWrap: "normal",   // only wrap at spaces/hyphens
+    maxWidth: 450 }}>
                     {wine.notes}</TableCell>
-                  <TableCell>
-  {wine.wine_image_url ? (
-    <a
-      href={wine.wine_image_url}
-      target="_blank"
-      rel="noopener noreferrer"
-      style={{ color: "#1976d2", wordBreak: "break-all" }}
-    >
-      {wine.wine_image_url}
-    </a>
-  ) : (
-    "-"
-  )}
-</TableCell>
+                  <TableCell> {wine.wine_image_url ? (<a href={wine.wine_image_url}
+      target="_blank" rel="noopener noreferrer" style={{ color: "#1976d2", wordBreak: "break-all" }}>
+      {wine.wine_image_url} </a>) : ("-")}</TableCell>
 
                   <TableCell>
                     <IconButton onClick={() => handleEdit(wine.id)}><EditIcon fontSize="small" /></IconButton>
