@@ -14,6 +14,7 @@ import {
   Switch,
 } from "@mui/material";
 import logout from "../utils/logout";
+import { Link as RouterLink } from "react-router-dom";
 
 export default function RestaurantDashboard() {
   const [region, setRegion] = useState("");
@@ -33,6 +34,7 @@ export default function RestaurantDashboard() {
   const [searchCountry, setSearchCountry] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const apiBaseUrl = process.env.REACT_APP_API_BASE_URL;
+  const restaurantId = localStorage.getItem("restaurantId");
 
   useEffect(() => {
   const fetchRestaurantData = async () => {
@@ -237,9 +239,17 @@ const handleDeleteConfirm = async () => {
           >
             Request Wine
           </Button>
-          <Button href="#/user-view" variant="contained" sx={{ backgroundColor: "#ffccbc", color: "#100412ff" }}>
-            User View
-          </Button>
+          <Button
+  component={RouterLink}
+  to={`/user-view/${restaurantId}`}
+  variant="contained"
+  sx={{ backgroundColor: "#ffccbc", color: "#100412ff" }}
+  disabled={!restaurantId}
+>
+  User View
+</Button>
+
+
           <Button onClick={logout} variant="contained" sx={{ backgroundColor: "#ffccbc", color: "#100412ff" }}>
             Logout
           </Button>

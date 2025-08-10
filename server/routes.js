@@ -927,5 +927,47 @@ router.post("/auth/reset-password", async (req, res) => {
   }
 });
 
+// PUBLIC: get a restaurant's available wines (no auth)
+router.get("/public/restaurant/:id/wines", async (req, res) => {
+  const { id } = req.params;
+
+  // fetch wines assigned to this restaurant and marked available
+  const { data, error } = await db
+    .from("restaurant_wines")
+    .select("price_override, available, wine:wine_id (id, wine_name, company, region, country, type, body, vintage, notes, wine_image_url)")
+    .eq("restaurant_id", id)
+    .eq("available", true);
+
+  if (error) {
+    console.error("Public wines fetch error:", error);
+    return res.status(500).json({ error: error.message });
+  }
+
+  // header info
+  const { data: rest, error: restErr } = await db
+    .from("restaurant")
+    .select("name, logo_url")
+    .eq("id", id)
+    .single();
+
+  if (restErr && restErr.code !== "PGRST116") {
+    console.error("Public restaurant header error:", restErr);
+  }
+
+  const wines = (data || []).map((row) => ({
+    ...row.wine,
+    price: row.price_override ?? null,
+  }));
+
+  res.json({
+    restaurant: {
+      id,
+      name: rest?.name || "",
+      logo_url: rest?.logo_url || null,
+    },
+    wines,
+  });
+});
+
 
 module.exports = router;

@@ -242,25 +242,39 @@ const wineOptions = (availableWines || []).map(w => ({
           mb: 3,
           display: "flex",
           justifyContent: "space-between",
-          alignItems: "center"
+          alignItems: "center",
+          flexWrap: { xs: "wrap", sm: "nowrap" },
+          gap: 1
         }}
       >
         <Typography variant="h5" fontWeight="bold">
           {restaurantName}'s Wine Library
         </Typography>
 
-        <Box sx={{ display: "flex", gap: 2 }}>
-          <Button href="#/admin" variant="contained" sx={{ backgroundColor: "#cddaff", color: "#0026a3" }}>
-                    Dashboard
-                  </Button>
-          <Button href="#/admin/restaurantlist" variant="contained" sx={{ backgroundColor: "#cddaff", color: "#0026a3" }}>
-                    Back
-                  </Button>
-          <Button variant="contained" onClick={openAssignDialog} sx={{ backgroundColor: "#cddaff", color: "#0026a3" }}>
-  Add Wine to Library
-</Button>
-
-
+        <Box
+   sx={{
+     display: "flex",
+     gap: 1,
+     flexWrap: "wrap",                       // ✅ wrap the buttons on xs
+     justifyContent: { xs: "flex-start", sm: "flex-end" },
+     maxWidth: "100%",
+   }}
+ >
+   <Button size="small" href="#/admin" variant="contained" sx={{ backgroundColor: "#cddaff", color: "#0026a3" }}>
+     Dashboard
+   </Button>
+   <Button size="small" href="#/admin/restaurantlist" variant="contained" sx={{ backgroundColor: "#cddaff", color: "#0026a3" }}>
+    Back
+   </Button>
+   <Button
+    size="small"
+    variant="contained"
+     onClick={openAssignDialog}
+     sx={{ backgroundColor: "#cddaff", color: "#0026a3", whiteSpace: "nowrap" }}  // keep text on one line
+   >
+     Add Wine To Library
+     
+   </Button>
         </Box>
       </Box>
 <Box sx={{ mb: 2 }}>

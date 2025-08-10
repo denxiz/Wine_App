@@ -36,7 +36,7 @@ function App() {
         <Route path="/admin" element={ <ProtectedRoute role="admin"><AdminDashboard /></ProtectedRoute>} />
         <Route path="/admin/wine-requests" element={<ProtectedRoute role="admin"><WineRequestReview /></ProtectedRoute>} />
         <Route path="/admin/wines/add" element={<ProtectedRoute role="admin"><AddWineForm /></ProtectedRoute>} />
-        <Route path="/user-view" element={<UserView />}/>
+        <Route path="/user-view/:id" element={<UserView />}/>
       </Routes>
     </Router>
   );
