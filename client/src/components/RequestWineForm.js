@@ -286,6 +286,7 @@ export default function RequestWinePage() {
                 <FormControlLabel value="Red" control={<Radio />} label="Red" />
                 <FormControlLabel value="White" control={<Radio />} label="White" />
                 <FormControlLabel value="Rose" control={<Radio />} label="Rose" />
+                <FormControlLabel value="Sparkling" control={<Radio />} label="Sparkling" />
               </RadioGroup>
               {!!errors.type && <FormHelperText>{errors.type}</FormHelperText>}
             </FormControl>

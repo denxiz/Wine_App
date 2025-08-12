@@ -1,40 +1,48 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   Box, Typography, Table, TableHead, TableRow, TableCell,
   TableBody, TableContainer, Paper, Button, CircularProgress,
   Dialog, DialogTitle, DialogContent, DialogActions,
-  IconButton, TextField, FormControl,InputLabel, Select, MenuItem, Switch,
+  IconButton, TextField, FormControl, InputLabel, Select, MenuItem, Switch,
 } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
 import Autocomplete from "@mui/material/Autocomplete";
 
-
 export default function RestaurantLibrary() {
   const { id } = useParams();
   const navigate = useNavigate();
+
   const [wines, setWines] = useState([]);
   const [restaurantName, setRestaurantName] = useState("");
   const [loading, setLoading] = useState(true);
+
+  // Assign dialog
   const [openAssign, setOpenAssign] = useState(false);
   const [availableWines, setAvailableWines] = useState([]);
-  const [selectedWineId, setSelectedWineId] = useState(null);
-  const [priceOverride, setPriceOverride] = useState("");
+  const [assignSearch, setAssignSearch] = useState("");
+  const [selectedWineIds, setSelectedWineIds] = useState([]); // up to 5
+  const [priceMap, setPriceMap] = useState({});               // { [wineId]: "12.00" }
+  const [assignLoading, setAssignLoading] = useState(false);
+
+  // Table filters
   const [searchName, setSearchName] = useState("");
   const [searchCompany, setSearchCompany] = useState("");
   const [searchRegion, setSearchRegion] = useState("");
   const [searchYear, setSearchYear] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all"); // "all", "active", "inactive"
+  const [statusFilter, setStatusFilter] = useState("all"); // "all" | "active" | "inactive"
+
+  // Edit price dialog
+  const [editPriceWine, setEditPriceWine] = useState(null);
+  const [newPrice, setNewPrice] = useState("");
+
   const apiBaseUrl = process.env.REACT_APP_API_BASE_URL;
-const [assignSearch, setAssignSearch] = useState("");
-const [priceError, setPriceError] = useState("");
 
-
+  // Load restaurant wines (also refresh after assign dialog closes)
   useEffect(() => {
+    setLoading(true);
     fetch(`${apiBaseUrl}/api/restaurant/${id}/wines`, {
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
-      },
+      headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
     })
       .then((res) => res.json())
       .then((data) => {
@@ -46,195 +54,177 @@ const [priceError, setPriceError] = useState("");
         setWines([]);
         setRestaurantName(`Restaurant ${id}`);
       })
-      .finally(() => {
-        setLoading(false);
-      });
-  }, [id, openAssign]);
+      .finally(() => setLoading(false));
+  }, [id, openAssign, apiBaseUrl]);
 
-const [editPriceWine, setEditPriceWine] = useState(null);
-const [newPrice, setNewPrice] = useState("");
+  // ----- Price edit -----
+  const handlePriceEdit = (wine) => {
+    setEditPriceWine(wine);
+    setNewPrice(wine.price ?? "");
+  };
 
-const handlePriceEdit = (wine) => {
-  setEditPriceWine(wine);
-  setNewPrice(wine.price ?? "");
-};
-
-const submitPriceUpdate = async () => {
-  console.log("💲 Submitting new price:", newPrice, "for wine:", editPriceWine?.id);
-  try {
-    const res = await fetch(`${apiBaseUrl}/api/restaurant/${id}/update-price`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
-      },
-      body: JSON.stringify({
-        wine_id: editPriceWine.id,
-        price_override: parseFloat(newPrice),
-      }),
-    });
-
-    if (!res.ok) throw new Error("Update failed");
-    const updated = await res.json();
-
-    setWines((prev) =>
-      prev.map((wine) =>
-        wine.id === editPriceWine.id ? { ...wine, price: parseFloat(newPrice) } : wine
-      )
-    );
-    setEditPriceWine(null);
-    setNewPrice("");
-  } catch (err) {
-    alert("Failed to update price.");
-    console.error("Update price error:", err);
-  }
-};
-
-const handleUnassignWine = async (wineId) => {
-  if (!window.confirm("Are you sure you want to remove this wine from the restaurant?")) return;
-
-  try {
-    const res = await fetch(`${apiBaseUrl}/api/restaurant/${id}/unassign-wine/${wineId}`, {
-      method: "DELETE",
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
-      },
-    });
-
-    if (!res.ok) throw new Error("Failed to unassign wine");
-
-    // Remove it from the frontend list
-    setWines((prev) => prev.filter((wine) => wine.id !== wineId));
-  } catch (err) {
-    console.error("Unassign wine failed:", err);
-    alert("Failed to unassign wine.");
-  }
-};
-
-
-const toggleAvailable = async (wineId) => {
-  console.log("🍷 Sending availability update for wine:", wineId);
-  try {
-    const res = await fetch(`${apiBaseUrl}/api/restaurant/${id}/update-availability`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
-      },
-      body: JSON.stringify({ wine_id: wineId }),
-    });
-
-    if (!res.ok) throw new Error("Failed to update availability");
-
-    const updated = await res.json();
-    setWines((prev) =>
-      prev.map((wine) =>
-        wine.id === wineId ? { ...wine, available: !wine.available } : wine
-      )
-    );
-  } catch (err) {
-    console.error("Toggle availability failed:", err);
-    alert("Could not update availability");
-  }
-};
-
-
- const openAssignDialog = async () => {
-  try {
-    const token = localStorage.getItem("token");
-    console.log("JWT token:", token);
-
-    if (!token) {
-      alert("No token found. Please log in.");
-      return;
-    }
-
-    const res = await fetch(`${apiBaseUrl}/api/wines`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-
-    const text = await res.text(); // Get raw response text
-    console.log("Raw response:", text); // ✅ Log it before parsing
-
-    if (!res.ok) {
-      throw new Error(`Server responded with status ${res.status}`);
-    }
-
-    let data;
+  const submitPriceUpdate = async () => {
     try {
-      data = JSON.parse(text); // Try to parse JSON
-    } catch (parseErr) {
-      console.error("Failed to parse JSON:", parseErr.message);
-      throw new Error("Server returned invalid JSON.");
+      const res = await fetch(`${apiBaseUrl}/api/restaurant/${id}/update-price`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        body: JSON.stringify({
+          wine_id: editPriceWine.id,
+          price_override: parseFloat(newPrice),
+        }),
+      });
+      if (!res.ok) throw new Error("Update failed");
+
+      setWines((prev) =>
+        prev.map((w) => (w.id === editPriceWine.id ? { ...w, price: parseFloat(newPrice) } : w))
+      );
+      setEditPriceWine(null);
+      setNewPrice("");
+    } catch (err) {
+      console.error("Update price error:", err);
+      alert("Failed to update price.");
     }
+  };
 
-    setAvailableWines(data);
-    setOpenAssign(true);
-  } catch (err) {
-    console.error("openAssignDialog error:", err.message);
-    alert("Could not load wines. Please try again.");
-  }
-};
+  // ----- Unassign -----
+  const handleUnassignWine = async (wineId) => {
+    if (!window.confirm("Remove this wine from the restaurant?")) return;
+    try {
+      const res = await fetch(`${apiBaseUrl}/api/restaurant/${id}/unassign-wine/${wineId}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+      });
+      if (!res.ok) throw new Error("Failed to unassign wine");
+      setWines((prev) => prev.filter((w) => w.id !== wineId));
+    } catch (err) {
+      console.error("Unassign wine failed:", err);
+      alert("Failed to unassign wine.");
+    }
+  };
 
+  // ----- Availability -----
+  const toggleAvailable = async (wineId) => {
+    try {
+      const res = await fetch(`${apiBaseUrl}/api/restaurant/${id}/update-availability`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        body: JSON.stringify({ wine_id: wineId }),
+      });
+      if (!res.ok) throw new Error("Failed to update availability");
+      setWines((prev) =>
+        prev.map((w) => (w.id === wineId ? { ...w, available: !w.available } : w))
+      );
+    } catch (err) {
+      console.error("Toggle availability failed:", err);
+      alert("Could not update availability");
+    }
+  };
 
+  // ----- Open Assign Dialog -----
+  const openAssignDialog = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        alert("No token found. Please log in.");
+        return;
+      }
+      const res = await fetch(`${apiBaseUrl}/api/wines`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error(`Server responded ${res.status}`);
+      const data = await res.json();
+      setAvailableWines(data || []);
+      setOpenAssign(true);
+    } catch (err) {
+      console.error("openAssignDialog error:", err.message);
+      alert("Could not load wines. Please try again.");
+    }
+  };
 
+  // Only show unassigned wines in the picker
+  const assignedWineIds = useMemo(
+    () => new Set((wines || []).map((w) => w.id)),
+    [wines]
+  );
 
-const handleAssignWine = async () => {
-  // 1) Must pick a wine
-  if (!selectedWineId) {
-    alert("Select a wine first");
-    return;
-  }
+  const wineOptions = useMemo(() => {
+    const raw = (availableWines || []).filter((w) => !assignedWineIds.has(w.id));
+    return raw.map((w) => ({
+      ...w,
+      label: `${w.wine_name} (${w.vintage ?? "NV"}) — ${w.company ?? "—"}, ${w.region ?? ""}, ${w.country ?? ""}`
+        .replace(/\s+,/g, ",")
+        .replace(/—,\s*$/, "—"),
+    }));
+  }, [availableWines, assignedWineIds]);
 
-  // 2) Price is required and must be > 0
-  const priceNum = Number(priceOverride);
-  if (!Number.isFinite(priceNum) || priceNum <= 0) {
-    setPriceError("Please enter a valid price > 0");
-    return;
-  }
-  setPriceError("");
-
-  // 3) Submit
-  try {
-    const res = await fetch(`${apiBaseUrl}/api/restaurant/${id}/assign-wine`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
-      },
-      body: JSON.stringify({
-        wine_id: selectedWineId,
-        price_override: priceNum, // send numeric, not string/null
-      }),
-    });
-
-    if (!res.ok) {
-      const result = await res.json().catch(() => ({}));
-      alert("Error assigning wine: " + (result.error || "Unknown error"));
+  // Bulk assign up to 5 wines
+  const handleAssignWine = async () => {
+    const invalid = selectedWineIds.filter((id) => !(Number(priceMap[id]) > 0));
+    if (invalid.length) {
+      alert("Please enter a valid price (> 0) for each selected wine.");
       return;
     }
 
-    alert("Wine assigned successfully!");
-    setOpenAssign(false);
-    setSelectedWineId(null);
-    setPriceOverride("");
-  } catch (err) {
-    console.error("Assign error:", err);
-    alert("Failed to assign wine.");
-  }
-};
+    setAssignLoading(true);
+    try {
+      for (const wid of selectedWineIds) {
+        const res = await fetch(`${apiBaseUrl}/api/restaurant/${id}/assign-wine`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+          body: JSON.stringify({
+            wine_id: wid,
+            price_override: Number(priceMap[wid]),
+          }),
+        });
+        if (!res.ok) {
+          const msg = await res.text().catch(() => "");
+          throw new Error(`Failed to assign wine ${wid}: ${msg || res.status}`);
+        }
+      }
 
-const wineOptions = (availableWines || []).map(w => ({
-  ...w,
-  label: `${w.wine_name} (${w.vintage ?? "NV"}) — ${w.company}, ${w.region}, ${w.country}`,
-}));
+      alert(`Assigned ${selectedWineIds.length} wine(s) successfully!`);
+      setOpenAssign(false);
+      setSelectedWineIds([]);
+      setPriceMap({});
+    } catch (err) {
+      console.error("Bulk assign error:", err);
+      alert("One or more assignments failed. Some items may not have been added.");
+    } finally {
+      setAssignLoading(false);
+    }
+  };
 
-
+  // Table filtering
+  const filteredWines = useMemo(() => {
+    const n = searchName.toLowerCase();
+    const c = searchCompany.toLowerCase();
+    const r = searchRegion.toLowerCase();
+    return (wines || []).filter((w) => {
+      const ok =
+        (w.wine_name || "").toLowerCase().includes(n) &&
+        (w.company || "").toLowerCase().includes(c) &&
+        (w.region || "").toLowerCase().includes(r) &&
+        (searchYear === "" || String(w.vintage).includes(searchYear));
+      if (!ok) return false;
+      if (statusFilter === "all") return true;
+      if (statusFilter === "active") return !!w.available;
+      if (statusFilter === "inactive") return !w.available;
+      return true;
+    });
+  }, [wines, searchName, searchCompany, searchRegion, searchYear, statusFilter]);
 
   return (
     <Box sx={{ minHeight: "100vh", backgroundColor: "#f4fdfc", p: 3 }}>
+      {/* Header */}
       <Box
         sx={{
           backgroundColor: "#d8f0ef",
@@ -244,7 +234,7 @@ const wineOptions = (availableWines || []).map(w => ({
           justifyContent: "space-between",
           alignItems: "center",
           flexWrap: { xs: "wrap", sm: "nowrap" },
-          gap: 1
+          gap: 1,
         }}
       >
         <Typography variant="h5" fontWeight="bold">
@@ -252,77 +242,89 @@ const wineOptions = (availableWines || []).map(w => ({
         </Typography>
 
         <Box
-   sx={{
-     display: "flex",
-     gap: 1,
-     flexWrap: "wrap",                       // ✅ wrap the buttons on xs
-     justifyContent: { xs: "flex-start", sm: "flex-end" },
-     maxWidth: "100%",
-   }}
- >
-   <Button size="small" href="#/admin" variant="contained" sx={{ backgroundColor: "#cddaff", color: "#0026a3" }}>
-     Dashboard
-   </Button>
-   <Button size="small" href="#/admin/restaurantlist" variant="contained" sx={{ backgroundColor: "#cddaff", color: "#0026a3" }}>
-    Back
-   </Button>
-   <Button
-    size="small"
-    variant="contained"
-     onClick={openAssignDialog}
-     sx={{ backgroundColor: "#cddaff", color: "#0026a3", whiteSpace: "nowrap" }}  // keep text on one line
-   >
-     Add Wine To Library
-     
-   </Button>
+          sx={{
+            display: "flex",
+            gap: 1,
+            flexWrap: "wrap",
+            justifyContent: { xs: "flex-start", sm: "flex-end" },
+            maxWidth: "100%",
+          }}
+        >
+          <Button
+            size="small"
+            href="#/admin"
+            variant="contained"
+            sx={{ backgroundColor: "#cddaff", color: "#0026a3" }}
+          >
+            Dashboard
+          </Button>
+          <Button
+            size="small"
+            href="#/admin/restaurantlist"
+            variant="contained"
+            sx={{ backgroundColor: "#cddaff", color: "#0026a3" }}
+          >
+            Back
+          </Button>
+          <Button
+            size="small"
+            variant="contained"
+            onClick={openAssignDialog}
+            sx={{ backgroundColor: "#cddaff", color: "#0026a3", whiteSpace: "nowrap" }}
+          >
+            Add Wine To Library
+          </Button>
         </Box>
       </Box>
-<Box sx={{ mb: 2 }}>
-  <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap" }}>
-    <TextField
-      label="Search by Name"
-      value={searchName}
-      onChange={e => setSearchName(e.target.value)}
-      size="small"
-      sx={{ minWidth: 200 }}
-    />
-    <TextField
-      label="Search by Company"
-      value={searchCompany}
-      onChange={e => setSearchCompany(e.target.value)}
-      size="small"
-      sx={{ minWidth: 200 }}
-    />
-    <TextField
-      label="Search by Region"
-      value={searchRegion}
-      onChange={e => setSearchRegion(e.target.value)}
-      size="small"
-      sx={{ minWidth: 200 }}
-    />
-    <TextField
-      label="Search by Year"
-      value={searchYear}
-      onChange={e => setSearchYear(e.target.value)}
-      type="number"
-      size="small"
-      sx={{ minWidth: 120 }}
-    />
-    <FormControl size="small" sx={{ minWidth: 160 }}>
-      <InputLabel>Status</InputLabel>
-      <Select
-        value={statusFilter}
-        label="Status"
-        onChange={e => setStatusFilter(e.target.value)}
-      >
-        <MenuItem value="all">All</MenuItem>
-        <MenuItem value="active">Available</MenuItem>
-        <MenuItem value="inactive">Unavailable</MenuItem>
-      </Select>
-    </FormControl>
-  </Box>
-</Box>
 
+      {/* Filters */}
+      <Box sx={{ mb: 2 }}>
+        <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap" }}>
+          <TextField
+            label="Search by Name"
+            value={searchName}
+            onChange={(e) => setSearchName(e.target.value)}
+            size="small"
+            sx={{ minWidth: 200 }}
+          />
+          <TextField
+            label="Search by Company"
+            value={searchCompany}
+            onChange={(e) => setSearchCompany(e.target.value)}
+            size="small"
+            sx={{ minWidth: 200 }}
+          />
+          <TextField
+            label="Search by Region"
+            value={searchRegion}
+            onChange={(e) => setSearchRegion(e.target.value)}
+            size="small"
+            sx={{ minWidth: 200 }}
+          />
+          <TextField
+            label="Search by Year"
+            value={searchYear}
+            onChange={(e) => setSearchYear(e.target.value)}
+            type="number"
+            size="small"
+            sx={{ minWidth: 120 }}
+          />
+          <FormControl size="small" sx={{ minWidth: 160 }}>
+            <InputLabel>Status</InputLabel>
+            <Select
+              value={statusFilter}
+              label="Status"
+              onChange={(e) => setStatusFilter(e.target.value)}
+            >
+              <MenuItem value="all">All</MenuItem>
+              <MenuItem value="active">Available</MenuItem>
+              <MenuItem value="inactive">Unavailable</MenuItem>
+            </Select>
+          </FormControl>
+        </Box>
+      </Box>
+
+      {/* Table */}
       {loading ? (
         <Box sx={{ textAlign: "center", mt: 5 }}>
           <CircularProgress />
@@ -346,179 +348,202 @@ const wineOptions = (availableWines || []).map(w => ({
               </TableRow>
             </TableHead>
             <TableBody>
-              {wines
-  .filter(wine =>
-    wine.wine_name?.toLowerCase().includes(searchName.toLowerCase()) &&
-    wine.company?.toLowerCase().includes(searchCompany.toLowerCase()) &&
-    wine.region?.toLowerCase().includes(searchRegion.toLowerCase()) &&
-    (searchYear === "" || String(wine.vintage).includes(searchYear)) &&
-    (
-      statusFilter === "all" ||
-      (statusFilter === "active" && wine.available) ||
-      (statusFilter === "inactive" && !wine.available)
-    )
-  )
-  .map((wine) => (
-    <TableRow key={wine.id}>
-      <TableCell>{wine.wine_name}</TableCell>
-      <TableCell>{wine.company}</TableCell>
-      <TableCell>{wine.region}</TableCell>
-      <TableCell>{wine.country}</TableCell>
-      <TableCell>{wine.vintage}</TableCell>
-      <TableCell>{wine.type}</TableCell>
-      <TableCell>{wine.body}</TableCell>
-      <TableCell>${wine.price ?? "-"}</TableCell>
-      <TableCell>
-        <Switch checked={!!wine.available} onChange={() => toggleAvailable(wine.id)} color="primary" />
-      </TableCell>
-      <TableCell>
-        <IconButton size="small" onClick={() => handlePriceEdit(wine)}>
-          <EditIcon fontSize="small" />
-        </IconButton>
-      </TableCell>
-      <TableCell>
-        <IconButton
-          size="small"
-          onClick={() => handleUnassignWine(wine.id)}
-          sx={{ ml: 1 }}
-          color="error"
-        >
-          🗑️
-        </IconButton>
-      </TableCell>
-    </TableRow>
-  ))
-}
-{
-  wines.filter(wine =>
-    wine.wine_name?.toLowerCase().includes(searchName.toLowerCase()) &&
-    wine.company?.toLowerCase().includes(searchCompany.toLowerCase()) &&
-    wine.region?.toLowerCase().includes(searchRegion.toLowerCase()) &&
-    (searchYear === "" || String(wine.vintage).includes(searchYear)) &&
-    (
-      statusFilter === "all" ||
-      (statusFilter === "active" && wine.available) ||
-      (statusFilter === "inactive" && !wine.available)
-    )
-  ).length === 0 && (
-    <TableRow>
-      <TableCell colSpan={11} align="center">
-        No wines found for this restaurant.
-      </TableCell>
-    </TableRow>
-  )
-}
+              {filteredWines.map((wine) => (
+                <TableRow key={wine.id}>
+                  <TableCell>{wine.wine_name}</TableCell>
+                  <TableCell>{wine.company}</TableCell>
+                  <TableCell>{wine.region}</TableCell>
+                  <TableCell>{wine.country}</TableCell>
+                  <TableCell>{wine.vintage}</TableCell>
+                  <TableCell>{wine.type}</TableCell>
+                  <TableCell>{wine.body}</TableCell>
+                  <TableCell>${wine.price ?? "-"}</TableCell>
+                  <TableCell>
+                    <Switch
+                      checked={!!wine.available}
+                      onChange={() => toggleAvailable(wine.id)}
+                      color="primary"
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <IconButton size="small" onClick={() => handlePriceEdit(wine)}>
+                      <EditIcon fontSize="small" />
+                    </IconButton>
+                  </TableCell>
+                  <TableCell>
+                    <IconButton
+                      size="small"
+                      onClick={() => handleUnassignWine(wine.id)}
+                      sx={{ ml: 1 }}
+                      color="error"
+                    >
+                      🗑️
+                    </IconButton>
+                  </TableCell>
+                </TableRow>
+              ))}
 
+              {filteredWines.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={11} align="center">
+                    No wines found for this restaurant.
+                  </TableCell>
+                </TableRow>
+              )}
             </TableBody>
           </Table>
         </TableContainer>
       )}
 
       {/* Assign Dialog */}
+      <Dialog
+        open={openAssign}
+        onClose={() => {
+          setOpenAssign(false);
+          setSelectedWineIds([]);
+          setPriceMap({});
+        }}
+        maxWidth="lg"
+        fullWidth
+        PaperProps={{
+          sx: { width: 960, maxWidth: "90vw", maxHeight: "85vh", borderRadius: 2 },
+        }}
+      >
+        <DialogTitle>Assign up to 5 wines to {restaurantName}</DialogTitle>
 
-<Dialog open={openAssign} onClose={() => setOpenAssign(false)} maxWidth="lg" fullWidth
-PaperProps={{
-    sx: {
-      width: 960,                      // ~960px wide
-      maxWidth: '90vw',               // responsive
-      maxHeight: '85vh',              // taller
-      borderRadius: 2
-    }
-  }}>
-  <DialogTitle>Assign Wine to {restaurantName}</DialogTitle>
-  <DialogContent sx={{ display: 'grid', gap: 2, py: 2 }}>
-    <Autocomplete
-  fullWidth
-  options={wineOptions}
-  // shows combined "Name (Year) — Region, Country"
-  getOptionLabel={(opt) => opt?.label ?? ""}
-  // keep equality stable by id
-  isOptionEqualToValue={(opt, val) => opt.id === val.id}
-  // control the currently picked option by id
-  value={wineOptions.find(o => o.id === selectedWineId) || null}
-  onChange={(_, val) => setSelectedWineId(val?.id ?? null)}
-  // control the text the user is typing
-  inputValue={assignSearch}
-  onInputChange={(_, val) => setAssignSearch(val)}
-  // type "name, year" to filter both
-  filterOptions={(options, { inputValue }) => {
-    const raw = inputValue.trim().toLowerCase();
+        <DialogContent sx={{ display: "grid", gap: 2, py: 2 }}>
+          <Autocomplete
+            multiple
+            disableCloseOnSelect
+            options={wineOptions}
+            getOptionLabel={(opt) => opt?.label ?? ""}
+            isOptionEqualToValue={(opt, val) => opt.id === val.id}
+            value={wineOptions.filter((o) => selectedWineIds.includes(o.id))}
+            onChange={(_, vals) => {
+              const ids = vals.map((v) => v.id).slice(0, 5); // cap at 5
+              setSelectedWineIds(ids);
+              setPriceMap((pm) =>
+                Object.fromEntries(Object.entries(pm).filter(([k]) => ids.includes(k)))
+              );
+            }}
+            inputValue={assignSearch}
+            onInputChange={(_, val) => setAssignSearch(val)}
+            filterOptions={(options, { inputValue }) => {
+              const raw = inputValue.trim().toLowerCase();
+              const [namePartRaw, yearPartRaw] = raw.split(",").map((s) => s?.trim());
+              const wantsYear = !!yearPartRaw && /^\d{2,4}$/.test(yearPartRaw);
 
-    // if they typed "name, year"
-    const [namePartRaw, yearPartRaw] = raw.split(",").map(s => s?.trim());
-    const wantsYear = !!yearPartRaw && /^\d{2,4}$/.test(yearPartRaw);
+              return options.filter((opt) => {
+                const nameHit = namePartRaw
+                  ? (opt.wine_name || "").toLowerCase().includes(namePartRaw)
+                  : (opt.label || "").toLowerCase().includes(raw);
+                if (!nameHit) return false;
+                if (wantsYear) {
+                  const vint = String(opt.vintage ?? "");
+                  if (!vint) return false;
+                  return vint.endsWith(yearPartRaw);
+                }
+                return true;
+              });
+            }}
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                label='Select wines (type "name" or "name, year")'
+                placeholder='e.g., "Margaux, 2015"'
+                helperText="Only unassigned wines are shown. Max 5 selections."
+              />
+            )}
+            sx={{ minWidth: 720 }}                 // bigger anchor = bigger dropdown
+            ListboxProps={{ sx: { maxHeight: 480 } }} // taller dropdown
+            renderOption={(props, opt) => (
+              <li {...props} key={opt.id}>
+                <Box>
+                  <Typography variant="body2" fontWeight={600}>
+                    {opt.wine_name} {opt.vintage ? `(${opt.vintage})` : "(NV)"}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    {(opt.company || "—")}, {opt.region}, {opt.country}
+                  </Typography>
+                </Box>
+              </li>
+            )}
+          />
 
-    return options.filter(opt => {
-      const nameHit = namePartRaw
-        ? (opt.wine_name || "").toLowerCase().includes(namePartRaw)
-        : (opt.label || "").toLowerCase().includes(raw);
+          {/* Price inputs for each selected wine */}
+          {selectedWineIds.map((wid) => {
+            const opt = wineOptions.find((o) => o.id === wid);
+            return (
+              <Box
+                key={wid}
+                sx={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 160px",
+                  alignItems: "center",
+                  gap: 2,
+                }}
+              >
+                <Typography variant="body2">{opt?.label}</Typography>
+                <TextField
+                  label="Price"
+                  type="number"
+                  value={priceMap[wid] ?? ""}
+                  onChange={(e) => setPriceMap((pm) => ({ ...pm, [wid]: e.target.value }))}
+                  inputProps={{ min: 0, step: "0.01" }}
+                  required
+                />
+              </Box>
+            );
+          })}
+        </DialogContent>
 
-      if (!nameHit) return false;
+        <DialogActions>
+          <Button
+            onClick={() => {
+              setOpenAssign(false);
+              setSelectedWineIds([]);
+              setPriceMap({});
+            }}
+            disabled={assignLoading}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={handleAssignWine}
+            variant="contained"
+            disabled={
+              assignLoading ||
+              selectedWineIds.length === 0 ||
+              !selectedWineIds.every((wid) => {
+                const v = Number(priceMap[wid]);
+                return Number.isFinite(v) && v > 0;
+              })
+            }
+          >
+            {assignLoading ? "Assigning…" : "ASSIGN WINES"}
+          </Button>
+        </DialogActions>
+      </Dialog>
 
-      if (wantsYear) {
-        // accept 2 or 4 digit entry; compare to vintage end
-        const vint = String(opt.vintage ?? "");
-        if (!vint) return false;
-        return vint.endsWith(yearPartRaw);
-      }
-      return true;
-    });
-  }}
-  renderInput={(params) => (
-    <TextField
-      {...params}
-      label={`Select a Wine (type "name" or "name, year")`}
-      placeholder={`e.g., "Margaux, 2015"`}
-      InputLabelProps={{ ...params.InputLabelProps}}
-    />
-  )}
-/>
-
-
-    <TextField
-  label="Price (required)"
-  type="number"
-  value={priceOverride}
-  onChange={(e) => { setPriceOverride(e.target.value); if (priceError) setPriceError(""); }}
-  inputProps={{ min: 0, step: "0.01" }}
-  required
-  error={!!priceError}
-  helperText={priceError}
-/>
-  </DialogContent>
-
-  <DialogActions>
-    <Button onClick={() => setOpenAssign(false)}>Cancel</Button>
-    <Button
-  onClick={handleAssignWine}
-  variant="contained"
-  disabled={!selectedWineId || !priceOverride || Number(priceOverride) <= 0}
->
-  ASSIGN WINE
-</Button>
-
-
-  </DialogActions>
-</Dialog>
-
-
-<Dialog open={!!editPriceWine} onClose={() => setEditPriceWine(null)}>
-  <DialogTitle>Edit Price</DialogTitle>
-  <DialogContent>
-    <TextField
-      label="New Price"
-      type="number"
-      value={newPrice}
-      onChange={(e) => setNewPrice(e.target.value)}
-      fullWidth
-    />
-  </DialogContent>
-  <DialogActions>
-    <Button onClick={() => setEditPriceWine(null)}>Cancel</Button>
-    <Button onClick={submitPriceUpdate} variant="contained">Update</Button>
-  </DialogActions>
-</Dialog>
-
+      {/* Edit Price Dialog */}
+      <Dialog open={!!editPriceWine} onClose={() => setEditPriceWine(null)}>
+        <DialogTitle>Edit Price</DialogTitle>
+        <DialogContent>
+          <TextField
+            label="New Price"
+            type="number"
+            value={newPrice}
+            onChange={(e) => setNewPrice(e.target.value)}
+            fullWidth
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setEditPriceWine(null)}>Cancel</Button>
+          <Button onClick={submitPriceUpdate} variant="contained">
+            Update
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }

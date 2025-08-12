@@ -59,7 +59,7 @@ export default function AssignWineImage() {
   }, [wines, onlyNoImage]);
 
   const getOptionLabel = (w) =>
-    w ? `${w.wine_name} (${w.vintage ?? "NV"}) — ${w.region}, ${w.company}, ${w.country}${w.wine_image_url ? "" : " • no image"}` : "";
+    w ? `${w.wine_name} (${w.vintage ?? "NV"}) — ${w.company}, ${w.region}, ${w.country}${w.wine_image_url ? "" : " • no image"}` : "";
 
   const handleSelect = (_, val) => setSelectedWine(val);
 
