@@ -15,7 +15,8 @@ const { DeleteObjectCommand } = require("@aws-sdk/client-s3");
 const sharp = require("sharp");
 const BASE_URL = `https://${process.env.S3_BUCKET}.s3.${process.env.AWS_REGION}.amazonaws.com`;
 const crypto = require("crypto");
-const APP_URL = process.env.APP_URL || "https://http://my-wine-app-frontend.s3-website.us-east-2.amazonaws.com/";
+const APP_URL = process.env.APP_URL || "https://d253tmqtt80ob2.cloudfront.net";
+
 
 
 

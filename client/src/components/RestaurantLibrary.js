@@ -7,6 +7,7 @@ import {
   IconButton, TextField, FormControl, InputLabel, Select, MenuItem, Switch,
 } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
+import CloseIcon from "@mui/icons-material/Close";
 import Autocomplete from "@mui/material/Autocomplete";
 
 export default function RestaurantLibrary() {
@@ -21,7 +22,7 @@ export default function RestaurantLibrary() {
   const [openAssign, setOpenAssign] = useState(false);
   const [availableWines, setAvailableWines] = useState([]);
   const [assignSearch, setAssignSearch] = useState("");
-  const [selectedWineIds, setSelectedWineIds] = useState([]); // up to 5
+  const [selectedWineIds, setSelectedWineIds] = useState([]); // up to 10
   const [priceMap, setPriceMap] = useState({});               // { [wineId]: "12.00" }
   const [assignLoading, setAssignLoading] = useState(false);
 
@@ -163,7 +164,7 @@ export default function RestaurantLibrary() {
     }));
   }, [availableWines, assignedWineIds]);
 
-  // Bulk assign up to 5 wines
+  // Bulk assign up to 10 wines
   const handleAssignWine = async () => {
     const invalid = selectedWineIds.filter((id) => !(Number(priceMap[id]) > 0));
     if (invalid.length) {
@@ -221,6 +222,16 @@ export default function RestaurantLibrary() {
       return true;
     });
   }, [wines, searchName, searchCompany, searchRegion, searchYear, statusFilter]);
+
+  // Remove one selected wine from the assign list
+  const deselectWine = (wid) => {
+    setSelectedWineIds((ids) => ids.filter((id) => id !== wid));
+    setPriceMap((pm) => {
+      const copy = { ...pm };
+      delete copy[wid];
+      return copy;
+    });
+  };
 
   return (
     <Box sx={{ minHeight: "100vh", backgroundColor: "#f4fdfc", p: 3 }}>
@@ -409,7 +420,7 @@ export default function RestaurantLibrary() {
           sx: { width: 960, maxWidth: "90vw", maxHeight: "85vh", borderRadius: 2 },
         }}
       >
-        <DialogTitle>Assign up to 5 wines to {restaurantName}</DialogTitle>
+        <DialogTitle>Assign up to 10 wines to {restaurantName}</DialogTitle>
 
         <DialogContent sx={{ display: "grid", gap: 2, py: 2 }}>
           <Autocomplete
@@ -420,12 +431,14 @@ export default function RestaurantLibrary() {
             isOptionEqualToValue={(opt, val) => opt.id === val.id}
             value={wineOptions.filter((o) => selectedWineIds.includes(o.id))}
             onChange={(_, vals) => {
-              const ids = vals.map((v) => v.id).slice(0, 5); // cap at 5
+              const ids = vals.map((v) => v.id).slice(0, 10); // cap at 10
               setSelectedWineIds(ids);
               setPriceMap((pm) =>
                 Object.fromEntries(Object.entries(pm).filter(([k]) => ids.includes(k)))
               );
             }}
+            // Do NOT show selected chips inside the input to save space
+            renderTags={() => null}
             inputValue={assignSearch}
             onInputChange={(_, val) => setAssignSearch(val)}
             filterOptions={(options, { inputValue }) => {
@@ -446,16 +459,20 @@ export default function RestaurantLibrary() {
                 return true;
               });
             }}
+            // When 10 are selected, disable picking more (but keep already picked selectable)
+            getOptionDisabled={(opt) =>
+              selectedWineIds.length >= 10 && !selectedWineIds.includes(opt.id)
+            }
             renderInput={(params) => (
               <TextField
                 {...params}
-                label='Select wines (type "name" or "name, year")'
+                label='Search wines (type "name" or "name, year")'
                 placeholder='e.g., "Margaux, 2015"'
-                helperText="Only unassigned wines are shown. Max 5 selections."
+                helperText={`Only unassigned wines are shown. Selected: ${selectedWineIds.length}/10`}
               />
             )}
-            sx={{ minWidth: 720 }}                 // bigger anchor = bigger dropdown
-            ListboxProps={{ sx: { maxHeight: 480 } }} // taller dropdown
+            sx={{ minWidth: 720 }}
+            ListboxProps={{ sx: { maxHeight: 480 } }}
             renderOption={(props, opt) => (
               <li {...props} key={opt.id}>
                 <Box>
@@ -470,7 +487,7 @@ export default function RestaurantLibrary() {
             )}
           />
 
-          {/* Price inputs for each selected wine */}
+          {/* Selected wines list with price + remove (X) */}
           {selectedWineIds.map((wid) => {
             const opt = wineOptions.find((o) => o.id === wid);
             return (
@@ -478,7 +495,7 @@ export default function RestaurantLibrary() {
                 key={wid}
                 sx={{
                   display: "grid",
-                  gridTemplateColumns: "1fr 160px",
+                  gridTemplateColumns: "1fr 140px 40px",
                   alignItems: "center",
                   gap: 2,
                 }}
@@ -492,6 +509,9 @@ export default function RestaurantLibrary() {
                   inputProps={{ min: 0, step: "0.01" }}
                   required
                 />
+                <IconButton size="small" onClick={() => deselectWine(wid)} aria-label="remove">
+                  <CloseIcon fontSize="small" />
+                </IconButton>
               </Box>
             );
           })}
