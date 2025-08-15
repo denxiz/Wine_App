@@ -36,7 +36,7 @@ if (email === process.env.ADMIN_EMAIL) {
     const { data, error } = await supabase
       .from("restaurant")
       .select("*")
-      .eq("email", email)
+      .ilike("email", email)
       .single();
 
       console.log("Supabase query result:", { data, error });

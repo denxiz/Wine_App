@@ -17,7 +17,7 @@
   },
   "scripts": {
     "predeploy": "",
-    "deploy":"npm run build && aws s3 sync build/ s3://my-wine-app-frontend/ --delete",
+    "deploy":"npm run build && aws s3 sync build/ s3://my-wine-app-frontend/ --delete && aws cloudfront create-invalidation --distribution-id EJ88N5EP9VTLU --paths '/*'",
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",

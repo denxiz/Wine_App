@@ -67,6 +67,7 @@ const FALLBACK_SYNONYMS = {
   },
 };
 
+/* ------------------------------ Utilities ------------------------------ */
 const deepClone = (o) => JSON.parse(JSON.stringify(o || {}));
 const normalize = (s) =>
   (s || "")
@@ -130,21 +131,6 @@ const tokenSim = (a, b) => {
   return Math.max(tri, lev, contains);
 };
 
-// Best similarity for a token across key fields (NO notes)
-const bestFieldSim = (token, fields) => {
-  let best = 0;
-  for (const f of fields) {
-    if (!f) continue;
-    const str = String(f);
-    const parts = str.split(/[^a-z0-9]+/i).filter(Boolean);
-    const localBest = Math.max(tokenSim(token, str), ...parts.map((p) => tokenSim(token, p)));
-    if (localBest > best) best = localBest;
-    if (best >= 0.98) break;
-  }
-  return best;
-};
-
-// Synonym helpers
 const findIntents = (facetMap, q) => {
   if (!facetMap) return [];
   const qq = ` ${normalize(q)} `;
@@ -162,8 +148,37 @@ const findIntents = (facetMap, q) => {
 const aliasesForCanon = (facetMap, canon) =>
   (facetMap?.[canon] || []).concat([canon]).map(normalize);
 
-/* ----------------------------------- Component ----------------------------------- */
+/* ----------------------------- Search helpers ----------------------------- */
+const STOPWORDS = new Set([
+  "the",
+  "a",
+  "an",
+  "wine",
+  "wines",
+  "vineyard",
+  "estate",
+  "cellars",
+  "winery",
+  "and",
+  "of",
+  "de",
+  "la",
+  "le",
+  "di",
+  "da",
+  "del",
+  "y",
+  "el",
+  "dos",
+  "das",
+]);
 
+const tokenize = (q) =>
+  normalize(q)
+    .split(/[^a-z0-9]+/i)
+    .filter((t) => t && !STOPWORDS.has(t) && t.length >= 2);
+
+/* ----------------------------------- Component ----------------------------------- */
 export default function UserView() {
   const { id } = useParams(); // /user-view/:id
   const apiBaseUrl = process.env.REACT_APP_API_BASE_URL;
@@ -266,12 +281,12 @@ export default function UserView() {
     };
   }, [apiBaseUrl]);
 
-  /* ----------------------------- SMART SCORER (fuzzy) ----------------------------- */
+  /* ----------------------------- SMART SCORER (fuzzy, stricter) ----------------------------- */
   const buildSmartScorer = (query) => {
     const q = normalize(query);
     if (!q) return () => 0;
 
-    const tokens = q.split(/[^a-z0-9]+/i).filter(Boolean);
+    const tokens = tokenize(q);
     const yearTokens = tokens.filter((t) => /^\d{2,4}$/.test(t));
     const otherTokens = tokens.filter((t) => !/^\d{2,4}$/.test(t));
 
@@ -281,7 +296,7 @@ export default function UserView() {
     const grapeIntents = findIntents(synonyms.grape, q);
     const countryIntents = findIntents(synonyms.country, q); // e.g., ["France"]
 
-    // Remove tokens that are already captured by intents (avoid double scoring/gating)
+    // Remove tokens already captured by intents (avoid double scoring/gating)
     const ignoreSet = new Set(
       [
         ...typeIntents.flatMap((c) => aliasesForCanon(synonyms.type, c)),
@@ -291,44 +306,77 @@ export default function UserView() {
     );
     const effectiveTokens = otherTokens.filter((t) => !ignoreSet.has(normalize(t)));
 
-    // weights
-    const W = {
-      type: 1.0,
-      body: 0.6,
-      grape: 0.9, // per grape
-      country: 0.9, // per country
-      year: 0.8, // per year token
-      text: 2.2, // combined textual fields weight
+    // field weights (favor name & geography)
+    const FIELD_W = {
+      wine_name: 1.25,
+      region: 1.0,
+      country: 0.9,
+      company: 0.6,
+      type: 1.1,
+      body: 0.5,
     };
 
-    // strong match threshold for token gating
-    const STRONG = 0.72;
+    // Overall weights
+    const W = {
+      intents: 1.2, // applied per facet section
+      grape: 0.9, // per grape
+      year: 0.8, // per year token
+      text: 2.4, // combined textual tokens across weighted fields
+    };
+
+    // Strong match thresholds
+    const STRONG = 0.78; // token-level
+    const INTENT_MATCH = 0.82; // facet gating
+
+    // Require at least 1 strong hit in key fields to "separate" wines
+    const requireKeyHit = (w, token) => {
+      const keyFields = [w.wine_name, w.region, w.country];
+      return keyFields.some((f) => tokenSim(f || "", token) >= STRONG);
+    };
+
+    // phrase bonus (for two+ words, prefer contiguous match in wine_name)
+    const phrase = normalize(query).replace(/\s+/g, " ").trim();
 
     return (w) => {
       let score = 0;
       let denom = 0;
 
-      // Soft facet bonuses
+      // ---- HARD GATES from intents ----
+      const typeOK =
+        !typeIntents.length ||
+        typeIntents.some((t) => tokenSim(w.type || "", t) >= INTENT_MATCH);
+      const bodyOK =
+        !bodyIntents.length ||
+        bodyIntents.some((b) => tokenSim(w.body || "", b) >= INTENT_MATCH);
+      const countryOK =
+        !countryIntents.length ||
+        countryIntents.some(
+          (c) =>
+            Math.max(tokenSim(w.country || "", c), tokenSim(w.region || "", c)) >= INTENT_MATCH
+        );
+
+      if (!(typeOK && bodyOK && countryOK)) return 0;
+
+      // ---- Intent bonuses (soft) ----
       if (typeIntents.length) {
         const best = Math.max(...typeIntents.map((c) => tokenSim(w.type || "", c)), 0);
-        score += W.type * best;
-        denom += W.type;
+        score += W.intents * best;
+        denom += W.intents;
       }
-
       if (bodyIntents.length) {
         const best = Math.max(...bodyIntents.map((c) => tokenSim(w.body || "", c)), 0);
-        score += W.body * best;
-        denom += W.body;
+        score += W.intents * 0.6 * best;
+        denom += W.intents * 0.6;
       }
-
       if (countryIntents.length) {
-        const fields = [w.country, w.region, w.wine_name];
         const best = Math.max(
-          ...countryIntents.map((c) => Math.max(...fields.map((f) => tokenSim(f || "", c)))),
+          ...countryIntents.map((c) =>
+            Math.max(tokenSim(w.country || "", c), tokenSim(w.region || "", c))
+          ),
           0
         );
-        score += W.country * best;
-        denom += W.country;
+        score += W.intents * best;
+        denom += W.intents;
       }
 
       if (grapeIntents.length) {
@@ -347,32 +395,47 @@ export default function UserView() {
         denom += W.grape;
       }
 
-      // Vintage signals
+      // ---- Vintage signals ----
       for (const y of yearTokens) {
         let yScore = 0;
         const v = String(w.vintage ?? "");
         if (v.startsWith(y)) yScore = 1;
-        else if (y.length === 2 && v.endsWith(y)) yScore = 0.8;
+        else if (y.length === 2 && v.endsWith(y)) yScore = 0.85;
         else yScore = tokenSim(v, y);
         score += W.year * yScore;
         denom += W.year;
       }
 
-      // Text tokens across key fields (NO notes)
-      const fields = [w.wine_name, w.company, w.region, w.country, w.type, w.body];
+      // ---- Text tokens across weighted fields (NO notes) ----
+      const fields = [
+        { v: w.wine_name, w: FIELD_W.wine_name },
+        { v: w.region, w: FIELD_W.region },
+        { v: w.country, w: FIELD_W.country },
+        { v: w.company, w: FIELD_W.company },
+        { v: w.type, w: FIELD_W.type },
+        { v: w.body, w: FIELD_W.body },
+      ];
+
       let textSum = 0;
       let strongHits = 0;
+      let keyHits = 0;
+
       for (const t of effectiveTokens) {
-        const s = bestFieldSim(t, fields);
-        textSum += s;
-        if (s >= STRONG) strongHits += 1;
+        let best = 0;
+        for (const f of fields) {
+          const s = tokenSim(f.v || "", t) * f.w;
+          if (s > best) best = s;
+        }
+        // normalize per-token weight scale back roughly to [0,1.25] => cap at 1.0
+        const perToken = Math.min(best / 1.25, 1);
+        textSum += perToken;
+        if (perToken >= STRONG) strongHits += 1;
+        if (requireKeyHit(w, t)) keyHits += 1;
       }
 
-      // Token gating: require >= 50% of effective tokens to be strong matches
-      const needed = Math.ceil(Math.max(1, effectiveTokens.length) * 0.5);
-      if (effectiveTokens.length && strongHits < needed) {
-        return 0; // gate out weak matches
-      }
+      // Token coverage gating (stricter): need 60% strong + at least 1 key field hit
+      const neededStrong = Math.ceil(Math.max(1, effectiveTokens.length) * 0.6);
+      if (effectiveTokens.length && (strongHits < neededStrong || keyHits < 1)) return 0;
 
       if (effectiveTokens.length) {
         const textAvg = textSum / effectiveTokens.length;
@@ -380,10 +443,22 @@ export default function UserView() {
         denom += W.text;
       }
 
+      // phrase bonus when query is > 1 word and matches wine_name/region closely
+      if (phrase.includes(" ")) {
+        const phraseBonus = Math.max(
+          tokenSim(w.wine_name || "", phrase),
+          tokenSim(`${w.region || ""} ${w.country || ""}`, phrase)
+        );
+        if (phraseBonus > 0.75) {
+          score += 0.6 * phraseBonus;
+          denom += 0.6;
+        }
+      }
+
       return denom ? score / denom : 0;
     };
   };
-  /* --------------------------- END SMART SCORER (fuzzy) --------------------------- */
+  /* --------------------------- END SMART SCORER --------------------------- */
 
   // Unique options from data
   const typeOptions = useMemo(() => {
@@ -407,16 +482,16 @@ export default function UserView() {
     const countryMust = findIntents(synonyms.country, search);
     const bodyMust = findIntents(synonyms.body, search);
     const grapeMust = findIntents(synonyms.grape, search);
-    const yearTokens = search.match(/\b\d{2,4}\b/g) || [];
+    const yearTokens = (search.match(/\b\d{2,4}\b/g) || []).map((s) => s.trim());
 
     const comp = normalize(companyFilter);
     const country = normalize(countryFilter);
     const region = normalize(regionFilter);
     const vint = (vintageFilter || "").trim();
-    const INTENT_MATCH = 0.75;
+    const INTENT_MATCH = 0.85; // slightly higher here
 
     // Higher threshold to avoid loose matches when searching
-    const THRESHOLD = search.trim() ? 0.55 : 0;
+    const THRESHOLD = search.trim() ? 0.62 : 0; // stricter than before
 
     // score first
     let scored = wines.map((w) => ({ w, score: scoreFn(w) }));
@@ -789,7 +864,7 @@ export default function UserView() {
                         borderRadius: 2,
                         overflow: "hidden",
                         boxShadow: 4,
-                        height: { xs: 132, sm: 170, md: 190 }, // shorter on phones
+                        height: { xs: 132, sm: 170, md: 190 },
                         transition:
                           "transform .15s ease, box-shadow .15s ease, background-color .15s ease",
                         "&:hover": {
@@ -854,7 +929,7 @@ export default function UserView() {
                             mt: 0.5,
                             fontStyle: "italic",
                             color: "blue",
-                            display: { xs: "none", sm: "block" }, // hide on phones to save space
+                            display: { xs: "none", sm: "block" },
                           }}
                         >
                           Click for more info →
